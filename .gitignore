@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.wrangler/
+test-results/
+playwright-report/
+blob-report/
+validation-output/
+*.local
+.DS_Store
