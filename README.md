@@ -1,2 +1,3 @@
 # usafa_academic_calendar
-Website to select one or more academic periods during a given semester and get the .ics files for use in your own calendars.
+
+This is the code base to host a website that allows visitors to select one or more academic periods at the U.S. Air Force Academy, for a given semester, and retrieve the calendar files (.ics files) for their personal use on their own calendars.
