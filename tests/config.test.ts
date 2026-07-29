@@ -122,6 +122,15 @@ describe('validateSemesterConfig rejects corrupted configs', () => {
     expect(() => validateSemesterConfig(bad)).toThrow(/expected M2/);
   });
 
+  it('rejects nonexistent calendar dates that Date.UTC would silently roll over', () => {
+    const bad = clone(fall);
+    bad.days[0].date = '2026-02-29'; // 2026 is not a leap year
+    expect(() => validateSemesterConfig(bad)).toThrow(/nonexistent calendar date/);
+    const bad2 = clone(fall);
+    bad2.days[0].date = '2026-06-31'; // June has 30 days
+    expect(() => validateSemesterConfig(bad2)).toThrow(/nonexistent calendar date/);
+  });
+
   it('rejects duplicate dates', () => {
     const bad = clone(fall);
     bad.days[1].date = bad.days[0].date;

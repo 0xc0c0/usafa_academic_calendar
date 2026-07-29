@@ -95,6 +95,51 @@ test('spring semester carts download separately with correct dates', async ({ pa
   expect(last.start.toISOString()).toBe('2027-05-13T14:30:00.000Z'); // M41, 0830 MDT
 });
 
+test('editing is non-destructive: entries survive reloads and switching edits', async ({ page }) => {
+  await addEntry(page, { dayType: 'M', periods: [1], title: 'Course A' });
+  await addEntry(page, { dayType: 'T', periods: [2], title: 'Course B' });
+
+  // Start editing A: it must stay in the cart, so a reload loses nothing.
+  await page.getByRole('listitem').filter({ hasText: 'Course A' }).getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByText('editing…')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Course A', { exact: true })).toBeVisible();
+  await expect(page.getByText('Course B', { exact: true })).toBeVisible();
+
+  // Switching from editing A to editing B must not destroy A.
+  await page.getByRole('listitem').filter({ hasText: 'Course A' }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Course B' }).getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByText('Course A', { exact: true })).toBeVisible();
+
+  // Saving an edit updates in place instead of appending a duplicate.
+  await page.getByLabel(/Course name/).fill('Course B renamed');
+  await page.getByRole('button', { name: 'Save entry' }).click();
+  await expect(page.getByText('Course B renamed', { exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+});
+
+test('two-semester carts download sequentially without reusing a captcha token', async ({ page }) => {
+  await addEntry(page, { dayType: 'M', periods: [3], title: 'Fall Course' });
+  await page.getByLabel('Semester').selectOption('spring-2027');
+  await addEntry(page, { dayType: 'T', periods: [2], title: 'Spring Course' });
+
+  const fallButton = page.getByRole('button', { name: /Download usafa-fall-2026\.ics/ });
+  const springButton = page.getByRole('button', { name: /Download usafa-spring-2027\.ics/ });
+  await expect(fallButton).toBeEnabled({ timeout: 30_000 });
+
+  const fallDownload = page.waitForEvent('download');
+  await fallButton.click();
+  expect((await fallDownload).suggestedFilename()).toBe('usafa-fall-2026.ics');
+
+  // The widget resets after each download (tokens are single-use); the button
+  // re-enables once a fresh token arrives, and the second download succeeds.
+  await expect(springButton).toBeEnabled({ timeout: 30_000 });
+  const springDownload = page.waitForEvent('download');
+  await springButton.click();
+  const events = await parseDownload(await springDownload);
+  expect(events).toHaveLength(41);
+});
+
 test('cart persists across a page reload', async ({ page }) => {
   await addEntry(page, { dayType: 'M', periods: [1], title: 'Persistent 101' });
   await expect(page.getByText('Persistent 101', { exact: true })).toBeVisible();

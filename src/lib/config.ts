@@ -20,6 +20,14 @@ export function dayOfWeek(isoDate: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+/** True only if the date actually exists — Date.UTC silently rolls over
+ * inputs like Feb 29 in a non-leap year, so require a clean round-trip. */
+export function isRealDate(isoDate: string): boolean {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 /**
  * Structural validation for a semester config. Throws with a precise message on
  * the first violation. Returns the config typed for downstream use.
@@ -49,6 +57,7 @@ export function validateSemesterConfig(raw: unknown): SemesterConfig {
   const seen = new Set<string>();
   for (const day of cfg.days as SemesterDay[]) {
     if (!DATE_RE.test(day.date)) fail(id, `malformed date "${day.date}"`);
+    if (!isRealDate(day.date)) fail(id, `nonexistent calendar date ${day.date}`);
     if (seen.has(day.date)) fail(id, `duplicate date ${day.date}`);
     seen.add(day.date);
     if (day.date <= prevDate) fail(id, `dates out of order at ${day.date}`);

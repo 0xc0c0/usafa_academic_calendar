@@ -33,14 +33,28 @@ function describeEntry(config: SemesterConfig, entry: ScheduleEntry): string {
 interface SemesterGroupProps {
   config: SemesterConfig;
   entries: ScheduleEntry[];
+  editingId: string | null;
   onEdit: (entry: ScheduleEntry) => void;
   onRemove: (id: string) => void;
   onDownload: (config: SemesterConfig, entries: ScheduleEntry[]) => void;
   downloading: boolean;
+  /** True while ANY semester's download is in flight — Turnstile tokens are
+   * single-use, so a second concurrent request would 403 in production. */
+  anyDownloadInFlight: boolean;
   captchaReady: boolean;
 }
 
-function SemesterGroup({ config, entries, onEdit, onRemove, onDownload, downloading, captchaReady }: SemesterGroupProps) {
+function SemesterGroup({
+  config,
+  entries,
+  editingId,
+  onEdit,
+  onRemove,
+  onDownload,
+  downloading,
+  anyDownloadInFlight,
+  captchaReady,
+}: SemesterGroupProps) {
   const meetings = useMemo(() => expandEntries(config, entries), [config, entries]);
   const modifiedCount = meetings.filter((m) => m.modifiedSoC).length;
   const first = meetings[0];
@@ -53,6 +67,7 @@ function SemesterGroup({ config, entries, onEdit, onRemove, onDownload, download
           <li key={entry.id} className="cart-item">
             <div>
               <strong>{entry.title.trim() || genericTitle(entry)}</strong>
+              {entry.id === editingId && <span className="editing-badge"> editing…</span>}
               {entry.location.trim() && <span className="muted"> · {entry.location}</span>}
               <div className="muted small">
                 {entry.dayType}-days, period{entry.periods.length > 1 ? 's' : ''} {entry.periods.join(', ')} —{' '}
@@ -77,7 +92,7 @@ function SemesterGroup({ config, entries, onEdit, onRemove, onDownload, download
       <button
         type="button"
         className="primary"
-        disabled={downloading || !captchaReady}
+        disabled={anyDownloadInFlight || !captchaReady}
         onClick={() => onDownload(config, entries)}
       >
         {downloading ? 'Generating…' : `Download ${icsFilename(config)}`}
@@ -94,6 +109,7 @@ export default function App() {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [cart, setCart] = useState<ScheduleEntry[]>(loadCart);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -111,34 +127,57 @@ export default function App() {
     setPeriods((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p].sort((a, b) => a - b)));
   };
 
+  const clearForm = () => {
+    setPeriods([]);
+    setTitle('');
+    setLocation('');
+  };
+
   const addToCart = () => {
     if (periods.length === 0) {
       setFormNote('Pick at least one period.');
       return;
     }
-    const entry: ScheduleEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    const values = {
       semesterId,
       dayType,
       periods,
       title: title.slice(0, MAX_TITLE_LENGTH),
       location: location.slice(0, MAX_LOCATION_LENGTH),
     };
-    setCart((prev) => [...prev, entry]);
-    setPeriods([]);
-    setTitle('');
-    setLocation('');
-    setFormNote(`Added ${entry.title.trim() || genericTitle(entry)} to the cart.`);
+    const label = values.title.trim() || genericTitle(values);
+    if (editingId && cart.some((e) => e.id === editingId)) {
+      // Replace in place — the entry stays in the cart the whole time it is
+      // being edited, so a reload or a second Edit click never loses data.
+      setCart((prev) => prev.map((e) => (e.id === editingId ? { ...values, id: editingId } : e)));
+      setFormNote(`Updated ${label}.`);
+    } else {
+      setCart((prev) => [...prev, { ...values, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }]);
+      setFormNote(`Added ${label} to the cart.`);
+    }
+    setEditingId(null);
+    clearForm();
   };
 
   const editEntry = (entry: ScheduleEntry) => {
-    setCart((prev) => prev.filter((e) => e.id !== entry.id));
+    setEditingId(entry.id);
     setSemesterId(entry.semesterId);
     setDayType(entry.dayType);
     setPeriods(entry.periods);
     setTitle(entry.title);
     setLocation(entry.location);
-    setFormNote('Entry loaded into the form — adjust and re-add it.');
+    setFormNote('Editing this entry — "Save entry" updates it in place.');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    clearForm();
+    setFormNote('Edit cancelled; the entry is unchanged.');
+  };
+
+  const removeEntry = (id: string) => {
+    setCart((prev) => prev.filter((e) => e.id !== id));
+    if (id === editingId) setEditingId(null);
   };
 
   const download = async (config: SemesterConfig, entries: ScheduleEntry[]) => {
@@ -269,8 +308,13 @@ export default function App() {
         </div>
 
         <button type="button" className="primary" onClick={addToCart}>
-          Add to cart
+          {editingId ? 'Save entry' : 'Add to cart'}
         </button>
+        {editingId && (
+          <button type="button" className="link" onClick={cancelEdit}>
+            Cancel edit
+          </button>
+        )}
         {formNote && (
           <p className="muted small" role="status">
             {formNote}
@@ -294,14 +338,23 @@ export default function App() {
                 key={config.id}
                 config={config}
                 entries={entries}
+                editingId={editingId}
                 onEdit={editEntry}
-                onRemove={(id) => setCart((prev) => prev.filter((e) => e.id !== id))}
+                onRemove={removeEntry}
                 onDownload={download}
                 downloading={downloadingId === config.id}
+                anyDownloadInFlight={downloadingId !== null}
                 captchaReady={token !== null}
               />
             ))}
-            <button type="button" className="link danger" onClick={() => setCart([])}>
+            <button
+              type="button"
+              className="link danger"
+              onClick={() => {
+                setCart([]);
+                setEditingId(null);
+              }}
+            >
               Clear cart
             </button>
           </>

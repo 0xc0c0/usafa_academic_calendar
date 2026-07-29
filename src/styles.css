@@ -226,6 +226,18 @@ button.link.danger {
   color: var(--muted);
 }
 
+.editing-badge {
+  color: var(--usafa-blue);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .editing-badge {
+    color: #8fb4ff;
+  }
+}
+
 .small {
   font-size: 0.85rem;
 }
