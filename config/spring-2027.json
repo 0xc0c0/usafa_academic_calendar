@@ -1,0 +1,557 @@
+{
+  "id": "spring-2027",
+  "name": "Spring 2027",
+  "academicYear": "AY26-27",
+  "timezone": "America/Denver",
+  "source": {
+    "document": "AY 2026-2027 Cadet Academic Calendar",
+    "approved": "2026-01-07",
+    "url": "https://www.usafa.edu/app/uploads/AY_2026_2027_Calendar.pdf",
+    "scheduleOfCalls": {
+      "document": "USAFA Schedule of Calls 2026-2027 AY",
+      "approved": "2026-02-27",
+      "url": "https://www.usafa.edu/app/uploads/26_27_Schedule_of_Calls.pdf"
+    }
+  },
+  "scheduleOfCalls": {
+    "periods": {
+      "1": {
+        "start": "07:30",
+        "end": "08:23"
+      },
+      "2": {
+        "start": "08:30",
+        "end": "09:23"
+      },
+      "3": {
+        "start": "09:30",
+        "end": "10:23"
+      },
+      "4": {
+        "start": "10:30",
+        "end": "11:23"
+      },
+      "5": {
+        "start": "13:30",
+        "end": "14:23"
+      },
+      "6": {
+        "start": "14:30",
+        "end": "15:23"
+      }
+    },
+    "modified": {
+      "5": {
+        "start": "12:30",
+        "end": "13:23"
+      },
+      "6": {
+        "start": "13:30",
+        "end": "14:23"
+      }
+    }
+  },
+  "days": [
+    {
+      "date": "2027-01-06",
+      "dayType": "M",
+      "index": 1,
+      "modifiedSoC": false,
+      "note": "First M-day of Spring 2027"
+    },
+    {
+      "date": "2027-01-07",
+      "dayType": "T",
+      "index": 1,
+      "modifiedSoC": false,
+      "note": "First T-day of Spring 2027"
+    },
+    {
+      "date": "2027-01-08",
+      "dayType": "M",
+      "index": 2,
+      "modifiedSoC": true
+    },
+    {
+      "date": "2027-01-11",
+      "dayType": "T",
+      "index": 2,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-12",
+      "dayType": "M",
+      "index": 3,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-13",
+      "dayType": "T",
+      "index": 3,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-14",
+      "dayType": "M",
+      "index": 4,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-15",
+      "dayType": "T",
+      "index": 4,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-19",
+      "dayType": "M",
+      "index": 5,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-20",
+      "dayType": "T",
+      "index": 5,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-21",
+      "dayType": "M",
+      "index": 6,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-22",
+      "dayType": "T",
+      "index": 6,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-25",
+      "dayType": "M",
+      "index": 7,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-26",
+      "dayType": "T",
+      "index": 7,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-27",
+      "dayType": "M",
+      "index": 8,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-28",
+      "dayType": "T",
+      "index": 8,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-01-29",
+      "dayType": "M",
+      "index": 9,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-01",
+      "dayType": "T",
+      "index": 9,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-02",
+      "dayType": "M",
+      "index": 10,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-03",
+      "dayType": "T",
+      "index": 10,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-04",
+      "dayType": "M",
+      "index": 11,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-05",
+      "dayType": "T",
+      "index": 11,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-08",
+      "dayType": "M",
+      "index": 12,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-09",
+      "dayType": "T",
+      "index": 12,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-10",
+      "dayType": "M",
+      "index": 13,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-11",
+      "dayType": "T",
+      "index": 13,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-12",
+      "dayType": "M",
+      "index": 14,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-16",
+      "dayType": "T",
+      "index": 14,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-17",
+      "dayType": "M",
+      "index": 15,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-18",
+      "dayType": "T",
+      "index": 15,
+      "modifiedSoC": false,
+      "note": "NCLS"
+    },
+    {
+      "date": "2027-02-22",
+      "dayType": "M",
+      "index": 16,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-23",
+      "dayType": "T",
+      "index": 16,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-24",
+      "dayType": "M",
+      "index": 17,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-25",
+      "dayType": "T",
+      "index": 17,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-02-26",
+      "dayType": "M",
+      "index": 18,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-01",
+      "dayType": "T",
+      "index": 18,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-02",
+      "dayType": "M",
+      "index": 19,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-03",
+      "dayType": "T",
+      "index": 19,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-04",
+      "dayType": "M",
+      "index": 20,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-05",
+      "dayType": "T",
+      "index": 20,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-08",
+      "dayType": "M",
+      "index": 21,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-09",
+      "dayType": "T",
+      "index": 21,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-10",
+      "dayType": "M",
+      "index": 22,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-11",
+      "dayType": "T",
+      "index": 22,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-12",
+      "dayType": "M",
+      "index": 23,
+      "modifiedSoC": true
+    },
+    {
+      "date": "2027-03-15",
+      "dayType": "T",
+      "index": 23,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-16",
+      "dayType": "M",
+      "index": 24,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-17",
+      "dayType": "T",
+      "index": 24,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-18",
+      "dayType": "M",
+      "index": 25,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-19",
+      "dayType": "T",
+      "index": 25,
+      "modifiedSoC": false,
+      "note": "Spring Break begins after last military duty"
+    },
+    {
+      "date": "2027-03-29",
+      "dayType": "M",
+      "index": 26,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-30",
+      "dayType": "T",
+      "index": 26,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-03-31",
+      "dayType": "M",
+      "index": 27,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-01",
+      "dayType": "T",
+      "index": 27,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-02",
+      "dayType": "M",
+      "index": 28,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-05",
+      "dayType": "T",
+      "index": 28,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-06",
+      "dayType": "M",
+      "index": 29,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-07",
+      "dayType": "T",
+      "index": 29,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-08",
+      "dayType": "M",
+      "index": 30,
+      "modifiedSoC": true,
+      "note": "DSAT"
+    },
+    {
+      "date": "2027-04-12",
+      "dayType": "T",
+      "index": 30,
+      "modifiedSoC": false,
+      "note": "DSAT"
+    },
+    {
+      "date": "2027-04-13",
+      "dayType": "M",
+      "index": 31,
+      "modifiedSoC": false,
+      "note": "DSAT"
+    },
+    {
+      "date": "2027-04-14",
+      "dayType": "T",
+      "index": 31,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-15",
+      "dayType": "M",
+      "index": 32,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-16",
+      "dayType": "T",
+      "index": 32,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-19",
+      "dayType": "M",
+      "index": 33,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-20",
+      "dayType": "T",
+      "index": 33,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-21",
+      "dayType": "M",
+      "index": 34,
+      "modifiedSoC": true,
+      "note": "Crucible begins after classes"
+    },
+    {
+      "date": "2027-04-26",
+      "dayType": "T",
+      "index": 34,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-27",
+      "dayType": "M",
+      "index": 35,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-28",
+      "dayType": "T",
+      "index": 35,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-29",
+      "dayType": "M",
+      "index": 36,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-04-30",
+      "dayType": "T",
+      "index": 36,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-03",
+      "dayType": "M",
+      "index": 37,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-04",
+      "dayType": "T",
+      "index": 37,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-05",
+      "dayType": "M",
+      "index": 38,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-06",
+      "dayType": "T",
+      "index": 38,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-07",
+      "dayType": "M",
+      "index": 39,
+      "modifiedSoC": true
+    },
+    {
+      "date": "2027-05-10",
+      "dayType": "T",
+      "index": 39,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-11",
+      "dayType": "M",
+      "index": 40,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-12",
+      "dayType": "T",
+      "index": 40,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-13",
+      "dayType": "M",
+      "index": 41,
+      "modifiedSoC": false
+    },
+    {
+      "date": "2027-05-14",
+      "dayType": "T",
+      "index": 41,
+      "modifiedSoC": false,
+      "note": "Last class day of Spring 2027"
+    }
+  ]
+}
