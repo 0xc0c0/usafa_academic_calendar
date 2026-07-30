@@ -7,3 +7,4 @@ blob-report/
 validation-output/
 *.local
 .DS_Store
+cloudflare.txt
