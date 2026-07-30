@@ -44,6 +44,9 @@ export interface ScheduleEntry {
   /** Course name; blank falls back to a generic label */
   title: string;
   location: string;
+  /** Append the class-day label to each event title, e.g. "CS210 - M35".
+   * Optional so entries saved before this option existed still load. */
+  includeDayLabel?: boolean;
 }
 
 /** A single concrete class meeting (one standalone VEVENT). */

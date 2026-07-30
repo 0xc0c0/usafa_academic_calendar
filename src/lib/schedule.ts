@@ -77,7 +77,7 @@ export function expandEntry(config: SemesterConfig, entry: ScheduleEntry): Meeti
         start,
         end,
         modifiedSoC: day.modifiedSoC,
-        title,
+        title: entry.includeDayLabel ? `${title} - ${label}` : title,
         location: entry.location.trim(),
         description:
           `Class day ${label} (${config.name}), period${run.length > 1 ? 's' : ''} ${run.join(', ')}${modifiedNote}` +
@@ -122,6 +122,7 @@ export function validateEntries(config: SemesterConfig, raw: unknown): ScheduleE
       periods: (periods as PeriodNumber[]).sort((a, b) => a - b),
       title,
       location,
+      includeDayLabel: e.includeDayLabel === true,
     };
   });
 }

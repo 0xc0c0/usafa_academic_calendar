@@ -114,6 +114,21 @@ describe('expandEntry', () => {
     expect(custom[0].location).toBe('Fairchild 2G5');
   });
 
+  it('appends the class-day label to titles when includeDayLabel is set', () => {
+    const meetings = expandEntry(fall, entry({ title: 'CS210', includeDayLabel: true }));
+    const m35 = meetings.find((m) => m.date === '2026-11-17')!;
+    expect(m35.title).toBe('CS210 - M35');
+    expect(meetings[0].title).toBe('CS210 - M1');
+    // Every meeting gets its own day's label.
+    for (const m of meetings) expect(m.title).toBe(`CS210 - ${m.dayLabel}`);
+    // Works with the generic fallback title too.
+    const generic = expandEntry(fall, entry({ includeDayLabel: true }));
+    expect(generic.find((m) => m.date === '2026-11-17')!.title).toBe('Class — M-day Period 3 - M35');
+    // Off (or absent) leaves titles untouched.
+    const off = expandEntry(fall, entry({ title: 'CS210' }));
+    expect(off[0].title).toBe('CS210');
+  });
+
   it('carries calendar notes into descriptions', () => {
     const meetings = expandEntry(fall, entry({ dayType: 'T', periods: [1] }));
     const parentsWeekend = meetings.find((m) => m.date === '2026-09-04')!;
@@ -146,6 +161,15 @@ describe('validateEntries (untrusted input)', () => {
     expect(cleaned[0].periods).toEqual([3, 4]);
     expect(cleaned[0].title).toBe('Aero 315');
     expect(cleaned[0].semesterId).toBe('fall-2026');
+    expect(cleaned[0].includeDayLabel).toBe(false);
+  });
+
+  it('coerces includeDayLabel to a strict boolean', () => {
+    const on = validateEntries(fall, [{ dayType: 'M', periods: [1], includeDayLabel: true }]);
+    expect(on[0].includeDayLabel).toBe(true);
+    // Anything other than literal true (missing, truthy junk) is off.
+    const junk = validateEntries(fall, [{ dayType: 'M', periods: [1], includeDayLabel: 'yes' }]);
+    expect(junk[0].includeDayLabel).toBe(false);
   });
 
   const badPayloads: Array<[string, unknown, RegExp]> = [

@@ -72,6 +72,7 @@ function SemesterGroup({
               <div className="muted small">
                 {entry.dayType}-days, period{entry.periods.length > 1 ? 's' : ''} {entry.periods.join(', ')} —{' '}
                 {describeEntry(config, entry)}
+                {entry.includeDayLabel && ' · class day in titles'}
               </div>
             </div>
             <div className="cart-actions">
@@ -108,6 +109,7 @@ export default function App() {
   const [periods, setPeriods] = useState<PeriodNumber[]>([]);
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
+  const [includeDayLabel, setIncludeDayLabel] = useState(false);
   const [cart, setCart] = useState<ScheduleEntry[]>(loadCart);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -131,6 +133,7 @@ export default function App() {
     setPeriods([]);
     setTitle('');
     setLocation('');
+    setIncludeDayLabel(false);
   };
 
   const addToCart = () => {
@@ -144,6 +147,7 @@ export default function App() {
       periods,
       title: title.slice(0, MAX_TITLE_LENGTH),
       location: location.slice(0, MAX_LOCATION_LENGTH),
+      includeDayLabel,
     };
     const label = values.title.trim() || genericTitle(values);
     if (editingId && cart.some((e) => e.id === editingId)) {
@@ -166,6 +170,7 @@ export default function App() {
     setPeriods(entry.periods);
     setTitle(entry.title);
     setLocation(entry.location);
+    setIncludeDayLabel(entry.includeDayLabel === true);
     setFormNote('Editing this class — "Save class" updates it in place.');
   };
 
@@ -306,6 +311,16 @@ export default function App() {
             />
           </label>
         </div>
+
+        <label className="checkbox-option">
+          <input
+            type="checkbox"
+            checked={includeDayLabel}
+            onChange={(e) => setIncludeDayLabel(e.target.checked)}
+          />
+          Include the class day in each event title — e.g. “{title.trim() || 'CS210'} - {dayType}35” on class day{' '}
+          {dayType}35
+        </label>
 
         <button type="button" className="primary" onClick={addToCart}>
           {editingId ? 'Save class' : 'Add to schedule'}

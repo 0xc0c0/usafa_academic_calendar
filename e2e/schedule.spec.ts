@@ -10,7 +10,7 @@ async function parseDownload(download: Download) {
 
 async function addEntry(
   page: Page,
-  opts: { dayType: 'M' | 'T'; periods: number[]; title?: string; location?: string },
+  opts: { dayType: 'M' | 'T'; periods: number[]; title?: string; location?: string; includeDayLabel?: boolean },
 ) {
   await page.getByRole('radio', { name: `${opts.dayType}-days` }).check();
   for (const p of opts.periods) {
@@ -18,6 +18,7 @@ async function addEntry(
   }
   if (opts.title) await page.getByLabel(/Course name/).fill(opts.title);
   if (opts.location) await page.getByLabel(/Location/).fill(opts.location);
+  if (opts.includeDayLabel) await page.getByRole('checkbox', { name: /Include the class day/ }).check();
   await page.getByRole('button', { name: 'Add to schedule' }).click();
 }
 
@@ -33,7 +34,7 @@ test('full user journey: multi-entry cart → captcha → download → the .ics 
   // Build a realistic three-course load in Fall 2026.
   await addEntry(page, { dayType: 'M', periods: [3, 4], title: 'Comp Sci 110', location: 'Fairchild 2G5' });
   await addEntry(page, { dayType: 'T', periods: [1] }); // no title → generic label
-  await addEntry(page, { dayType: 'M', periods: [5, 6], title: 'Aero Lab' });
+  await addEntry(page, { dayType: 'M', periods: [5, 6], title: 'Aero Lab', includeDayLabel: true });
 
   await expect(page.getByText('Comp Sci 110', { exact: true })).toBeVisible();
   await expect(page.getByText('Class — T-day Period 1', { exact: true })).toBeVisible();
@@ -69,13 +70,17 @@ test('full user journey: multi-entry cart → captcha → download → the .ics 
   expect(m35.location).toBe('Fairchild 2G5');
 
   // Modified SoC: on M4 (2026-08-14, MDT) Aero Lab (periods 5-6) starts at 1230 instead of 1330.
-  const aeroLab = events.filter((e) => e.summary === 'Aero Lab');
+  // Aero Lab was added with "include class day in titles", so each summary carries its day label.
+  const aeroLab = events.filter((e) => e.summary.startsWith('Aero Lab'));
   expect(aeroLab).toHaveLength(41);
   const m4 = aeroLab.find((e) => e.start.toISOString().startsWith('2026-08-14'))!;
+  expect(m4.summary).toBe('Aero Lab - M4');
   expect(m4.start.toISOString()).toBe('2026-08-14T18:30:00.000Z'); // 1230 MDT
   expect(m4.description).toContain('Modified SoC');
   const m5day = aeroLab.find((e) => e.start.toISOString().startsWith('2026-08-18'))!;
+  expect(m5day.summary).toBe('Aero Lab - M5');
   expect(m5day.start.toISOString()).toBe('2026-08-18T19:30:00.000Z'); // regular 1330 MDT
+  // Comp Sci 110 left the option off, so its titles stay plain (asserted exact above).
 });
 
 test('spring semester carts download separately with correct dates', async ({ page }) => {
