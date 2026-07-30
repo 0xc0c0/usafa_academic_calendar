@@ -371,6 +371,29 @@ export default function App() {
         )}
       </section>
 
+      <section className="card" aria-label="Import into your calendar app">
+        <h2>4. Import into your calendar app</h2>
+        <ul className="import-tips">
+          <li>
+            <strong>Microsoft Outlook</strong> — use the <strong>Import</strong> option. In Outlook for Windows:
+            File → Open &amp; Export → Import/Export → “Import an iCalendar (.ics) file”, then choose{' '}
+            <strong>Import</strong> (not “Open as New”) so your classes land in your own calendar instead of a
+            separate temporary one. In new Outlook or Outlook on the web: Add calendar → “Upload from file”.
+          </li>
+          <li>
+            <strong>Google Calendar</strong> — Settings (gear icon) → “Import &amp; export” → select the file →
+            Import.
+          </li>
+          <li>
+            <strong>Apple Calendar</strong> — double-click the file, or File → Import.
+          </li>
+        </ul>
+        <p className="muted small">
+          Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
+          meeting without affecting the rest of the semester.
+        </p>
+      </section>
+
       <footer className="footer muted small">
         <p>
           Built from the official{' '}

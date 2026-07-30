@@ -115,7 +115,8 @@ test('editing is non-destructive: entries survive reloads and switching edits', 
   await page.getByLabel(/Course name/).fill('Course B renamed');
   await page.getByRole('button', { name: 'Save class' }).click();
   await expect(page.getByText('Course B renamed', { exact: true })).toBeVisible();
-  await expect(page.getByRole('listitem')).toHaveCount(2);
+  // Scoped to the schedule card: the static import-directions list also has listitems.
+  await expect(page.getByLabel('Fall 2026 schedule').getByRole('listitem')).toHaveCount(2);
 });
 
 test('two-semester carts download sequentially without reusing a captcha token', async ({ page }) => {

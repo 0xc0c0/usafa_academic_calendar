@@ -222,6 +222,15 @@ button.link.danger {
   flex-shrink: 0;
 }
 
+.import-tips {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.import-tips li {
+  margin-bottom: 0.5rem;
+}
+
 .muted {
   color: var(--muted);
 }
