@@ -61,12 +61,13 @@ test('full user journey: multi-entry cart → captcha → download → the .ics 
     expect(dates).not.toContain(noClass);
   }
 
-  // Canonical example: on M35 (2026-11-17, MST) Comp Sci 110 runs 0930-1123 (merged periods 3-4).
+  // Canonical example: on M35 (2026-11-17, MST) Comp Sci 110 meets 0930-1123 (merged
+  // periods 3-4); the calendar event spans full hours, so it ends at 1130.
   const compSci = events.filter((e) => e.summary === 'Comp Sci 110');
   expect(compSci).toHaveLength(41);
   const m35 = compSci.find((e) => e.start.toISOString().startsWith('2026-11-17'))!;
   expect(m35.start.toISOString()).toBe('2026-11-17T16:30:00.000Z');
-  expect(m35.end.toISOString()).toBe('2026-11-17T18:23:00.000Z');
+  expect(m35.end.toISOString()).toBe('2026-11-17T18:30:00.000Z');
   expect(m35.location).toBe('Fairchild 2G5');
 
   // Modified SoC: on M4 (2026-08-14, MDT) Aero Lab (periods 5-6) starts at 1230 instead of 1330.
@@ -181,4 +182,33 @@ test('undo-import help dialog opens from both entry points and closes', async ({
   await addEntry(page, { dayType: 'M', periods: [1], title: 'CS210' });
   await page.getByRole('button', { name: 'see how to undo an import' }).click();
   await expect(heading).toBeVisible();
+});
+
+test('DF Time: one click adds every T-day 1230-1330, downloads correctly, cannot be added twice', async ({
+  page,
+}) => {
+  const addButton = page.getByRole('button', { name: /Add DF Time \(Fall 2026\)/ });
+  await addButton.click();
+  await expect(page.getByLabel('Fall 2026 schedule').getByText('DF Time', { exact: true })).toBeVisible();
+  await expect(page.getByText(/T-days, 1230–1330 — 41 class days · 41 calendar events/)).toBeVisible();
+  // The button flips to a disabled "already added" state; no duplicates possible.
+  await expect(page.getByRole('button', { name: /Added to Fall 2026/ })).toBeDisabled();
+  // Nothing to configure, so DF Time entries have Remove but no Edit.
+  const dfItem = page.getByRole('listitem').filter({ hasText: 'DF Time' });
+  await expect(dfItem.getByRole('button', { name: 'Remove' })).toBeVisible();
+  await expect(dfItem.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+
+  const downloadButton = page.getByRole('button', { name: /Download usafa-fall-2026\.ics/ });
+  await expect(downloadButton).toBeEnabled({ timeout: 30_000 });
+  const downloadPromise = page.waitForEvent('download');
+  await downloadButton.click();
+  const events = await parseDownload(await downloadPromise);
+
+  expect(events).toHaveLength(41);
+  expect(new Set(events.map((e) => e.summary))).toEqual(new Set(['DF Time']));
+  const t1 = events.find((e) => e.start.toISOString().startsWith('2026-08-07'))!; // T1, MDT
+  expect(t1.start.toISOString()).toBe('2026-08-07T18:30:00.000Z'); // 1230 MDT
+  expect(t1.end.toISOString()).toBe('2026-08-07T19:30:00.000Z'); // 1330 MDT
+  const t35 = events.find((e) => e.start.toISOString().startsWith('2026-11-18'))!; // T35, MST
+  expect(t35.start.toISOString()).toBe('2026-11-18T19:30:00.000Z'); // 1230 MST
 });

@@ -18,6 +18,17 @@ function toMinutes(hhmm: string): number {
   return h * 60 + m;
 }
 
+/**
+ * Calendar events span full hours: a period's event ends 60 minutes after it
+ * starts, not at the official :23 dismissal — surrounding meeting invites are
+ * always rounded to the hour, so :23 ends just clutter calendars (owner
+ * decision). Merging still uses the official SoC times.
+ */
+export function fullHourEnd(start: string): string {
+  const total = toMinutes(start) + 60;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 /** Effective period times for a specific day, honoring Modified SoC. */
 export function periodTimesFor(config: SemesterConfig, day: SemesterDay, period: PeriodNumber): PeriodTime {
   const soc = config.scheduleOfCalls;
@@ -59,15 +70,41 @@ export function genericTitle(entry: Pick<ScheduleEntry, 'dayType' | 'periods'>):
   return `Class — ${entry.dayType}-day Period${plural} ${list}`;
 }
 
+/** Expand the fixed DF Time block: every T-day, between lunch and 5th period. */
+function expandDfTime(config: SemesterConfig): Meeting[] {
+  const df = config.scheduleOfCalls.dfTime;
+  const meetings: Meeting[] = [];
+  for (const day of config.days) {
+    if (day.dayType !== 'T') continue;
+    const label = dayLabel(day);
+    meetings.push({
+      date: day.date,
+      dayLabel: label,
+      periods: [],
+      start: df.start,
+      end: fullHourEnd(df.start),
+      modifiedSoC: day.modifiedSoC,
+      title: 'DF Time',
+      location: '',
+      description:
+        `DF Time on class day ${label} (${config.name}) — extra instruction, academic advising, ` +
+        `majors' meetings, and Dean's calls.` +
+        (day.note ? `\nCalendar note: ${day.note}` : ''),
+    });
+  }
+  return meetings;
+}
+
 /** Expand one cart entry into concrete meetings (one per class day of its type). */
 export function expandEntry(config: SemesterConfig, entry: ScheduleEntry): Meeting[] {
+  if (entry.kind === 'dfTime') return expandDfTime(config);
   const title = entry.title.trim() || genericTitle(entry);
   const meetings: Meeting[] = [];
   for (const day of config.days) {
     if (day.dayType !== entry.dayType) continue;
     for (const run of mergePeriods(config, day, entry.periods)) {
       const start = periodTimesFor(config, day, run[0]).start;
-      const end = periodTimesFor(config, day, run[run.length - 1]).end;
+      const end = fullHourEnd(periodTimesFor(config, day, run[run.length - 1]).start);
       const label = dayLabel(day);
       const modifiedNote = day.modifiedSoC ? ' — Modified SoC: afternoon sections one hour early' : '';
       meetings.push({
@@ -105,6 +142,19 @@ export function validateEntries(config: SemesterConfig, raw: unknown): ScheduleE
   if (raw.length > MAX_ENTRIES) throw new Error(`Too many entries (max ${MAX_ENTRIES}).`);
   return raw.map((item, i) => {
     const e = item as Partial<ScheduleEntry>;
+    if (e.kind === 'dfTime') {
+      // Fixed block: nothing user-configurable, so ignore all other fields.
+      return {
+        id: typeof e.id === 'string' ? e.id.slice(0, 40) : `entry-${i + 1}`,
+        semesterId: config.id,
+        dayType: 'T' as const,
+        periods: [],
+        title: 'DF Time',
+        location: '',
+        includeDayLabel: false,
+        kind: 'dfTime' as const,
+      };
+    }
     if (e.dayType !== 'M' && e.dayType !== 'T') throw new Error(`Entry ${i + 1}: day type must be M or T.`);
     if (!Array.isArray(e.periods) || e.periods.length === 0) throw new Error(`Entry ${i + 1}: pick at least one period.`);
     const periods = [...new Set(e.periods)];

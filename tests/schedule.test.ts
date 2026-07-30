@@ -70,12 +70,13 @@ describe('expandEntry', () => {
     expect(meetings).toHaveLength(82);
   });
 
-  it("canonical example: on M35 (2026-11-17) period 3 runs 0930-1023", () => {
+  it("canonical example: on M35 (2026-11-17) period 3 meets 0930-1023, event is 0930-1030", () => {
     const meetings = expandEntry(fall, entry({ periods: [3] }));
     const m35 = meetings.find((m) => m.date === '2026-11-17')!;
     expect(m35.dayLabel).toBe('M35');
     expect(m35.start).toBe('09:30');
-    expect(m35.end).toBe('10:23');
+    // Events span full hours (owner decision), not the official :23 dismissal.
+    expect(m35.end).toBe('10:30');
     expect(m35.modifiedSoC).toBe(false);
   });
 
@@ -83,19 +84,19 @@ describe('expandEntry', () => {
     const meetings = expandEntry(fall, entry({ periods: [5, 6] }));
     const m4 = meetings.find((m) => m.date === '2026-08-14')!;
     expect(m4.start).toBe('12:30');
-    expect(m4.end).toBe('14:23');
+    expect(m4.end).toBe('14:30'); // full hour after modified period 6's 1330 start
     expect(m4.modifiedSoC).toBe(true);
     expect(m4.description).toContain('Modified SoC');
     const regular = meetings.find((m) => m.date === '2026-11-17')!;
     expect(regular.start).toBe('13:30');
-    expect(regular.end).toBe('15:23');
+    expect(regular.end).toBe('15:30');
   });
 
   it('merges contiguous morning periods into one block', () => {
     const meetings = expandEntry(fall, entry({ periods: [3, 4] }));
     expect(meetings).toHaveLength(41);
     expect(meetings[0].start).toBe('09:30');
-    expect(meetings[0].end).toBe('11:23');
+    expect(meetings[0].end).toBe('11:30'); // full hour after period 4's 1030 start
   });
 
   it('T-day entries land only on T-days and are never Modified SoC in AY26-27', () => {
@@ -127,6 +128,20 @@ describe('expandEntry', () => {
     // Off (or absent) leaves titles untouched.
     const off = expandEntry(fall, entry({ title: 'CS210' }));
     expect(off[0].title).toBe('CS210');
+  });
+
+  it('DF Time expands to every T-day, 1230-1330, regardless of other fields', () => {
+    const meetings = expandEntry(fall, entry({ kind: 'dfTime', dayType: 'M', periods: [1, 2] }));
+    expect(meetings).toHaveLength(41); // one per T-day
+    for (const m of meetings) {
+      expect(m.dayLabel.startsWith('T')).toBe(true);
+      expect(m.start).toBe('12:30');
+      expect(m.end).toBe('13:30'); // full-hour event over the official 1230-1323 block
+      expect(m.title).toBe('DF Time');
+      expect(m.description).toContain('extra instruction');
+    }
+    expect(meetings[0].date).toBe('2026-08-07'); // T1
+    expect(meetings[40].date).toBe('2026-12-10'); // T41
   });
 
   it('carries calendar notes into descriptions', () => {
@@ -162,6 +177,19 @@ describe('validateEntries (untrusted input)', () => {
     expect(cleaned[0].title).toBe('Aero 315');
     expect(cleaned[0].semesterId).toBe('fall-2026');
     expect(cleaned[0].includeDayLabel).toBe(false);
+  });
+
+  it('normalizes DF Time entries to the fixed shape, ignoring other fields', () => {
+    const cleaned = validateEntries(fall, [
+      { kind: 'dfTime', dayType: 'M', periods: [9], title: 'evil', location: 'x'.repeat(500) },
+    ]);
+    expect(cleaned[0]).toMatchObject({
+      kind: 'dfTime',
+      dayType: 'T',
+      periods: [],
+      title: 'DF Time',
+      location: '',
+    });
   });
 
   it('coerces includeDayLabel to a strict boolean', () => {

@@ -50,6 +50,8 @@ export function validateSemesterConfig(raw: unknown): SemesterConfig {
     if (!soc.periods[p]) fail(id, `modified override for unknown period ${p}`);
     checkPeriodTime(id, `modified period ${p}`, soc.modified[p]);
   }
+  if (!soc.dfTime) fail(id, 'missing scheduleOfCalls.dfTime');
+  checkPeriodTime(id, 'dfTime', soc.dfTime);
 
   if (!Array.isArray(cfg.days) || cfg.days.length === 0) fail(id, 'days must be a non-empty array');
   const nextIndex: Record<string, number> = { M: 1, T: 1 };

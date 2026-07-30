@@ -105,6 +105,8 @@ describe('published semester configs', () => {
         '5': { start: '12:30', end: '13:23' },
         '6': { start: '13:30', end: '14:23' },
       });
+      // DF Time: the 1230-1323 block between lunch and 5th period (T-days).
+      expect(cfg.scheduleOfCalls.dfTime).toEqual({ start: '12:30', end: '13:23' });
     }
   });
 });

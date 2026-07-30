@@ -31,6 +31,9 @@ export interface SemesterConfig {
     periods: Record<string, PeriodTime>;
     /** Overrides applied to afternoon periods on modifiedSoC days */
     modified: Record<string, PeriodTime>;
+    /** DF Time: the Dean's extra-instruction/advising block between lunch and
+     * 5th period. Official SoC times (1230-1323); occurs on T-days only. */
+    dfTime: PeriodTime;
   };
   days: SemesterDay[];
 }
@@ -47,6 +50,9 @@ export interface ScheduleEntry {
   /** Append the class-day label to each event title, e.g. "CS210 - M35".
    * Optional so entries saved before this option existed still load. */
   includeDayLabel?: boolean;
+  /** 'dfTime' marks the fixed DF Time block (every T-day, no configuration);
+   * absent or 'class' is a normal course entry. */
+  kind?: 'class' | 'dfTime';
 }
 
 /** A single concrete class meeting (one standalone VEVENT). */

@@ -3,7 +3,7 @@ import Turnstile from './components/Turnstile.tsx';
 import UndoImportHelp from './components/UndoImportHelp.tsx';
 import { dayLabel } from './lib/config.ts';
 import { icsFilename } from './lib/ics.ts';
-import { expandEntries, expandEntry, genericTitle } from './lib/schedule.ts';
+import { expandEntries, expandEntry, fullHourEnd, genericTitle } from './lib/schedule.ts';
 import { SEMESTERS, getSemester } from './lib/semesters.ts';
 import type { DayType, PeriodNumber, ScheduleEntry, SemesterConfig } from './lib/types.ts';
 import { MAX_LOCATION_LENGTH, MAX_TITLE_LENGTH } from './lib/types.ts';
@@ -73,15 +73,20 @@ function SemesterGroup({
               {entry.id === editingId && <span className="editing-badge"> editing…</span>}
               {entry.location.trim() && <span className="muted"> · {entry.location}</span>}
               <div className="muted small">
-                {entry.dayType}-days, period{entry.periods.length > 1 ? 's' : ''} {entry.periods.join(', ')} —{' '}
-                {describeEntry(config, entry)}
+                {entry.kind === 'dfTime'
+                  ? `T-days, ${military(config.scheduleOfCalls.dfTime.start)}–${military(
+                      fullHourEnd(config.scheduleOfCalls.dfTime.start),
+                    )} — ${describeEntry(config, entry)}`
+                  : `${entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
                 {entry.includeDayLabel && ' · class day in titles'}
               </div>
             </div>
             <div className="cart-actions">
-              <button type="button" className="link" onClick={() => onEdit(entry)}>
-                Edit
-              </button>
+              {entry.kind !== 'dfTime' && (
+                <button type="button" className="link" onClick={() => onEdit(entry)}>
+                  Edit
+                </button>
+              )}
               <button type="button" className="link danger" onClick={() => onRemove(entry.id)}>
                 Remove
               </button>
@@ -191,6 +196,24 @@ export default function App() {
     setFormNote('Edit cancelled; the class is unchanged.');
   };
 
+  const dfTimeAdded = cart.some((e) => e.kind === 'dfTime' && e.semesterId === semesterId);
+
+  const addDfTime = () => {
+    if (dfTimeAdded) return;
+    setCart((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        semesterId,
+        dayType: 'T' as const,
+        periods: [],
+        title: 'DF Time',
+        location: '',
+        kind: 'dfTime' as const,
+      },
+    ]);
+  };
+
   const removeEntry = (id: string) => {
     setCart((prev) => prev.filter((e) => e.id !== id));
     if (id === editingId) setEditingId(null);
@@ -296,7 +319,8 @@ export default function App() {
           <p className="muted small">
             On days marked “Modified SoC” on the academic calendar, periods 5–6 start one hour earlier (1230 and
             1330). That’s applied automatically to the affected dates. Back-to-back periods (like {dayType}3 +{' '}
-            {dayType}4) become one continuous event.
+            {dayType}4) become one continuous event. Calendar events run a full hour from each period’s start
+            (rather than ending at the official :23 dismissal), so they line up with other meeting invites.
           </p>
         </fieldset>
 
@@ -347,14 +371,30 @@ export default function App() {
           </p>
         )}
         <p className="muted small">
-          Example: on class day {dayLabel(sampleDay)} ({sampleDay.date}), period {dayType}3 runs{' '}
+          Example: on class day {dayLabel(sampleDay)} ({sampleDay.date}), period {dayType}3 meets{' '}
           {military(formConfig.scheduleOfCalls.periods['3'].start)}–
-          {military(formConfig.scheduleOfCalls.periods['3'].end)}.
+          {military(formConfig.scheduleOfCalls.periods['3'].end)} and appears on your calendar as{' '}
+          {military(formConfig.scheduleOfCalls.periods['3'].start)}–
+          {military(fullHourEnd(formConfig.scheduleOfCalls.periods['3'].start))}.
         </p>
       </section>
 
       <section aria-label="Your schedule">
         <h2>2. Your schedule</h2>
+        <div className="card df-card">
+          <div>
+            <strong>DF Time</strong>
+            <div className="muted small">
+              The Dean's extra-instruction and advising block between lunch and 5th period — every T-day,{' '}
+              {military(formConfig.scheduleOfCalls.dfTime.start)}–
+              {military(fullHourEnd(formConfig.scheduleOfCalls.dfTime.start))}. Nothing to configure; one click
+              adds all of them.
+            </div>
+          </div>
+          <button type="button" className="primary" onClick={addDfTime} disabled={dfTimeAdded}>
+            {dfTimeAdded ? `Added to ${formConfig.name}` : `Add DF Time (${formConfig.name})`}
+          </button>
+        </div>
         {groups.length === 0 ? (
           <p className="muted">Nothing on your schedule yet — build a class above. Multi-period classes welcome.</p>
         ) : (

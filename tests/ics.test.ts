@@ -120,13 +120,13 @@ describe('ICS round-trip through an independent parser (node-ical)', () => {
     expect(events.every((e) => e.location === 'Fairchild 2G5')).toBe(true);
   });
 
-  it('canonical example survives the round trip: M35 period 3 on 2026-11-17 at 0930-1023 MST', () => {
+  it('canonical example survives the round trip: M35 period 3 on 2026-11-17, event 0930-1030 MST', () => {
     const events = parseEvents(buildFor(fall, [entry({})]));
     const m35 = events.find((e) => e.start.toISOString().startsWith('2026-11-17'))!;
     expect(m35).toBeDefined();
     // 2026-11-17 is after DST ends (2026-11-01): 09:30 MST = 16:30 UTC
     expect(m35.start.toISOString()).toBe('2026-11-17T16:30:00.000Z');
-    expect(m35.end.toISOString()).toBe('2026-11-17T17:23:00.000Z');
+    expect(m35.end.toISOString()).toBe('2026-11-17T17:30:00.000Z'); // full-hour event
     expect(m35.description).toContain('Class day M35');
   });
 
@@ -153,7 +153,7 @@ describe('ICS round-trip through an independent parser (node-ical)', () => {
     expect(events).toHaveLength(41);
     const modified = events.find((e) => e.start.toISOString().startsWith('2026-08-14'))!; // M4, MDT
     expect(modified.start.toISOString()).toBe('2026-08-14T18:30:00.000Z'); // 1230 MDT
-    expect(modified.end.toISOString()).toBe('2026-08-14T20:23:00.000Z'); // 1423 MDT
+    expect(modified.end.toISOString()).toBe('2026-08-14T20:30:00.000Z'); // full hour after 1330 start
     const regular = events.find((e) => e.start.toISOString().startsWith('2026-08-18'))!; // M5, regular
     expect(regular.start.toISOString()).toBe('2026-08-18T19:30:00.000Z'); // 1330 MDT
   });
@@ -168,6 +168,15 @@ describe('ICS round-trip through an independent parser (node-ical)', () => {
     );
     expect(events).toHaveLength(164);
     expect(events.some((e) => e.summary === 'Class — T-day Period 1')).toBe(true);
+  });
+
+  it('DF Time round-trips: 41 T-day events at 1230-1330 local', () => {
+    const events = parseEvents(buildFor(fall, [entry({ kind: 'dfTime', periods: [] })]));
+    expect(events).toHaveLength(41);
+    expect(new Set(events.map((e) => e.summary))).toEqual(new Set(['DF Time']));
+    const t1 = events.find((e) => e.start.toISOString().startsWith('2026-08-07'))!; // T1, MDT
+    expect(t1.start.toISOString()).toBe('2026-08-07T18:30:00.000Z'); // 1230 MDT
+    expect(t1.end.toISOString()).toBe('2026-08-07T19:30:00.000Z'); // 1330 MDT
   });
 
   it('escapes user text containing commas and newlines', () => {

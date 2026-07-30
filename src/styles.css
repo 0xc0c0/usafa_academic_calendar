@@ -222,6 +222,18 @@ button.link.danger {
   flex-shrink: 0;
 }
 
+.df-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.df-card button {
+  flex-shrink: 0;
+}
+
 .help-callout {
   display: block;
   width: 100%;
