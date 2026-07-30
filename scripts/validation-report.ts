@@ -139,13 +139,13 @@ const by = (events: ParsedEvent[], summary: string, date: string) =>
   events.find((e) => e.summary === summary && e.date === date);
 
 const m35 = by(fallEvents, 'Comp Sci 110', '2026-11-17');
-check('Canonical: day M35 (2026-11-17) periods 3-4 merged', '09:30-11:23', m35 ? `${m35.start}-${m35.end}` : 'missing');
+check('Canonical: day M35 (2026-11-17) periods 3-4 merged', '09:30-11:30', m35 ? `${m35.start}-${m35.end}` : 'missing');
 check('M35 event description names the class day', 'yes', m35?.description.includes('Class day M35') ? 'yes' : 'no');
 
 const m4 = by(fallEvents, 'Aero Lab', '2026-08-14');
-check('Modified SoC day M4 (2026-08-14): periods 5-6 one hour early', '12:30-14:23', m4 ? `${m4.start}-${m4.end}` : 'missing');
+check('Modified SoC day M4 (2026-08-14): periods 5-6 one hour early', '12:30-14:30', m4 ? `${m4.start}-${m4.end}` : 'missing');
 const m5 = by(fallEvents, 'Aero Lab', '2026-08-18');
-check('Regular day M5 (2026-08-18): periods 5-6 normal', '13:30-15:23', m5 ? `${m5.start}-${m5.end}` : 'missing');
+check('Regular day M5 (2026-08-18): periods 5-6 normal', '13:30-15:30', m5 ? `${m5.start}-${m5.end}` : 'missing');
 
 const modifiedDates = fall.days.filter((d) => d.modifiedSoC).map((d) => d.date);
 const aeroOnModified = fallEvents.filter((e) => e.summary === 'Aero Lab' && modifiedDates.includes(e.date));
@@ -170,7 +170,7 @@ check('DST: 0730 local after spring-forward (M24) in UTC', '2027-03-16T13:30:00.
 const law = springEvents.filter((e) => e.summary === 'Law 220' && e.date === '2027-01-07');
 check(
   'Lunch split: Law 220 periods 4+5 = two events on T1 (2027-01-07)',
-  '10:30-11:23 + 13:30-14:23',
+  '10:30-11:30 + 13:30-14:30',
   law.map((e) => `${e.start}-${e.end}`).join(' + ') || 'missing',
 );
 
