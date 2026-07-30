@@ -1,7 +1,9 @@
 # USAFA Academic Calendar → .ics Generator — Requirements
 
-**Status:** Approved for build · **Last updated:** 2026-07-29
+**Status:** Live in production — https://usafa-calendar.benslab.dev · **Last updated:** 2026-07-30
 **Product owner:** bnheruska@gmail.com
+**Versioning:** every deployed change bumps the version (x.yy.zzz) shown in the site
+footer and gets an entry in [`CHANGELOG.md`](CHANGELOG.md) (newest first).
 
 ## 1. Overview
 
@@ -61,6 +63,20 @@ the official 26–27 Schedule of Calls:
 | 5 | 13:30 | 14:23 |
 | 6 | 14:30 | 15:23 |
 
+**DF Time** (added 2026-07-30, v1.5.0): the 12:30–13:23 block is schedulable as a
+one-click fixed entry. Per the SoC notes it is the Dean's block for extra
+instruction, academic advising, majors' meetings, and Dean's calls — **T-days
+only** (M-days have CW Time instead, which is not schedulable here). Config carries
+it as `scheduleOfCalls.dfTime` with the official times.
+
+**Full-hour events** (owner decision 2026-07-30, v1.5.0): generated calendar
+*events* end 60 minutes after their start (period 3 event = 09:30–10:30; merged
+3+4 = 09:30–11:30; DF Time = 12:30–13:30) rather than at the official :23
+dismissal, so they line up with surrounding meeting invites. The tables above and
+the config files keep the official Schedule of Calls times as ground truth; the
+rounding is applied only at event generation (`fullHourEnd()`), and the
+contiguous-period merge rule still evaluates official times.
+
 ### 3.3 Modified Schedule of Calls ("Modified SoC")
 
 Some class days are marked on the academic calendar as **"Modified SoC — Afternoon
@@ -111,7 +127,8 @@ One JSON file per semester in `config/`. Launch files:
     "modified": {                  // overrides applied on modifiedSoC days
       "5": { "start": "12:30", "end": "13:23" },
       "6": { "start": "13:30", "end": "14:23" }
-    }
+    },
+    "dfTime": { "start": "12:30", "end": "13:23" }  // Dean's block, T-days only
   },
   "days": [                        // every class day, chronological
     {
@@ -145,7 +162,11 @@ One JSON file per semester in `config/`. Launch files:
 
 ## 5. Functional requirements
 
-### FR-1 Selection ("shopping cart")
+### FR-1 Selection (schedule builder)
+
+*Wording note (v1.1.0): the interaction works like a shopping cart, but all
+user-facing copy frames it as crafting a schedule — "Add to schedule", "Your
+schedule", "Build a class" — never cart/shopping language.*
 1. Visitor picks a **semester** (Fall 2026 / Spring 2027 at launch; list driven by
    discovered config files).
 2. Visitor composes a **schedule entry**: day type (M-days or T-days) + one or more
@@ -153,6 +174,12 @@ One JSON file per semester in `config/`. Launch files:
 3. Each entry has optional free-text **Title** (course name, e.g. "Comp Sci 110")
    and **Location** (e.g. "Fairchild 2G5"). Blank title falls back to a generic
    label of the form `Class — <dayType> Period(s) <list>`.
+   - **Per-entry day-label option** (v1.3.0): a checkbox appends each event's own
+     class-day label to its title, e.g. "CS210 - M35" on day M35. Off by default;
+     the server coerces the untrusted flag to a strict boolean.
+   - **DF Time** (v1.5.0): a one-click card in "Your schedule" adds the fixed DF
+     Time entry (every T-day) for the selected semester; nothing to configure, no
+     Edit button, cannot be added twice per semester.
 4. Entries accumulate in a **cart**: add, edit, remove, clear. Multiple entries are
    allowed (a full course load), including entries on both day types and entries
    with multiple periods. Cart persists across page reloads (localStorage).
@@ -165,12 +192,14 @@ One JSON file per semester in `config/`. Launch files:
 ### FR-2 Event generation
 1. For each cart entry, emit **one standalone VEVENT per class day** of the matching
    day type. No RRULEs, no EXDATEs.
-2. **Contiguous-period merge:** consecutive selected period numbers whose time gap
-   is only the passing period (≤ 10 minutes) merge into one event. E.g. periods
-   3+4 → 09:30–11:23. Periods 4+5 never merge (lunch gap). Non-contiguous
-   selections (e.g. 1 and 4) emit separate events per day.
+2. **Contiguous-period merge:** consecutive selected period numbers whose official
+   time gap is only the passing period (≤ 10 minutes) merge into one event.
+   Periods 4+5 never merge (lunch gap). Non-contiguous selections (e.g. 1 and 4)
+   emit separate events per day.
 3. On `modifiedSoC` days, periods 5/6 use the modified times, including the merge
-   rule (5+6 modified → 12:30–14:23).
+   rule.
+   *Event end times for 2 and 3 follow the full-hour rule (§3.2): merged 3+4 event
+   is 09:30–11:30; modified 5+6 event is 12:30–14:30.*
 4. Event fields:
    - `SUMMARY`: user title (or generic fallback).
    - `LOCATION`: user location if given.
@@ -201,6 +230,20 @@ One JSON file per semester in `config/`. Launch files:
 - No accounts, no login, no cookies beyond what Turnstile requires, no analytics
   that collect PII, no storage of user schedules server-side. Titles/locations
   exist only in the request and the returned file.
+
+### FR-5 User guidance (added post-launch)
+
+1. **Import directions** (v1.2.0): a visible section walks through importing the
+   .ics into each major calendar app, with Microsoft Outlook listed first and an
+   explicit recommendation to use the **Import** option (not "Open as New") in
+   classic Outlook.
+2. **Undo-an-import helper** (v1.4.0): a modal dialog, reachable from a callout in
+   the import section and a link under every download button, gives per-app
+   mass-delete directions for recovering from a wrong import, and teaches the
+   import-into-its-own-calendar habit. Structured so Windows Outlook screenshots
+   can be embedded later (owner to supply).
+3. **Versioning** (v1.6.0): the footer shows the app version, linked to
+   `CHANGELOG.md`; every deployed change bumps it.
 
 ## 6. Non-functional requirements
 
@@ -251,16 +294,23 @@ One JSON file per semester in `config/`. Launch files:
    whole semester at a glance.
 7. CI: all of the above runs on every push (GitHub Actions).
 
-## 9. Deployment / go-live checklist
+## 9. Deployment (as built — live since 2026-07-30)
 
-1. Push repo to GitHub (done continuously).
-2. Cloudflare dashboard → Workers & Pages → create Pages project → connect repo,
-   build command `npm run build`, output `dist/`. Functions in `functions/` deploy
-   automatically.
-3. Turnstile → create widget for the site's domain → copy site key + secret.
-4. Set Pages env vars: `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` (production).
-5. (Optional) attach custom domain in Pages → Custom domains.
-6. Smoke-test production: full cart → download → import into Google Calendar.
+- **Live URLs:** https://usafa-calendar.benslab.dev (custom domain; the requested
+  `usafa_calendar` spelling was impossible — underscores are invalid in TLS
+  hostnames) and https://usafa-academic-calendar.pages.dev.
+- **Pipeline:** `bash scripts/deploy.sh` — idempotent, direct-upload via wrangler.
+  Verifies the API token, creates/reuses the Turnstile widget and Pages project,
+  stores `TURNSTILE_SECRET_KEY` as a Pages secret, builds with
+  `VITE_TURNSTILE_SITE_KEY` baked in, deploys `dist/` + `functions/`, attaches the
+  custom domain + proxied CNAME, and purges the deploy's asset URLs from the edge
+  cache.
+- **Credentials:** gitignored `cloudflare.txt` holds two account-owned tokens
+  (`cfat_` prefix; verify via `/accounts/{id}/tokens/verify`): `api_token_2` =
+  Pages + Turnstile Edit, `api_token` = Zone DNS Edit + cache purge. **Both expire
+  2026-08-29** — rotate before then.
+- **Not set up:** GitHub push-to-deploy (requires one-time dashboard OAuth);
+  redeploys run the script instead.
 
 ## 10. Explicitly out of scope (v1)
 
@@ -270,11 +320,14 @@ One JSON file per semester in `config/`. Launch files:
 - Recurring events, accounts, saved schedules, calendar subscription feeds (webcal),
   Summer academic periods, Prep School calendars.
 
-## 11. Open questions for the product owner (non-blocking; needed before go-live)
+## 11. Open questions — all resolved at go-live (2026-07-30)
 
-1. Do you already have a Cloudflare account (and optionally a custom domain), or
-   should the launch URL be the default `*.pages.dev`?
-2. Who holds the GitHub repo that Cloudflare Pages will connect to — is
-   `0xc0c0/usafa_academic_calendar` (current origin) the deploy source of record?
-3. Any branding constraints (this is an unofficial tool; the site will carry an
-   "unofficial — verify against official USAFA calendar" disclaimer by default)?
+1. Cloudflare account + custom domain: yes — `benslab.dev` zone; app lives at
+   `usafa-calendar.benslab.dev`.
+2. Deploy source of record: `0xc0c0/usafa_academic_calendar` (deploys are
+   currently direct-upload from a checkout of `main`, not GitHub-triggered).
+3. Branding: default "unofficial — verify against the official USAFA calendar"
+   disclaimer stands.
+
+Outstanding (non-blocking): owner to supply Windows 11 screenshots for the
+Outlook sections of the undo-import helper (§FR-5.2).

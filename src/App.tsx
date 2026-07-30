@@ -5,6 +5,7 @@ import { dayLabel } from './lib/config.ts';
 import { icsFilename } from './lib/ics.ts';
 import { expandEntries, expandEntry, fullHourEnd, genericTitle } from './lib/schedule.ts';
 import { SEMESTERS, getSemester } from './lib/semesters.ts';
+import { APP_VERSION, CHANGELOG_URL } from './lib/version.ts';
 import type { DayType, PeriodNumber, ScheduleEntry, SemesterConfig } from './lib/types.ts';
 import { MAX_LOCATION_LENGTH, MAX_TITLE_LENGTH } from './lib/types.ts';
 
@@ -379,22 +380,23 @@ export default function App() {
         </p>
       </section>
 
-      <section aria-label="Your schedule">
-        <h2>2. Your schedule</h2>
-        <div className="card df-card">
-          <div>
-            <strong>DF Time</strong>
-            <div className="muted small">
-              The Dean's extra-instruction and advising block between lunch and 5th period — every T-day,{' '}
-              {military(formConfig.scheduleOfCalls.dfTime.start)}–
-              {military(fullHourEnd(formConfig.scheduleOfCalls.dfTime.start))}. Nothing to configure; one click
-              adds all of them.
-            </div>
+      <section className="card" aria-label="Add DF Time (optional)">
+        <h2>2. Add DF Time (optional)</h2>
+        <div className="df-card">
+          <div className="muted small">
+            The Dean's extra-instruction and advising block between lunch and 5th period — every T-day,{' '}
+            {military(formConfig.scheduleOfCalls.dfTime.start)}–
+            {military(fullHourEnd(formConfig.scheduleOfCalls.dfTime.start))}. Nothing to configure; one click adds
+            all of them.
           </div>
           <button type="button" className="primary" onClick={addDfTime} disabled={dfTimeAdded}>
             {dfTimeAdded ? `Added to ${formConfig.name}` : `Add DF Time (${formConfig.name})`}
           </button>
         </div>
+      </section>
+
+      <section aria-label="Your schedule">
+        <h2>3. Your schedule</h2>
         {groups.length === 0 ? (
           <p className="muted">Nothing on your schedule yet — build a class above. Multi-period classes welcome.</p>
         ) : (
@@ -429,7 +431,7 @@ export default function App() {
       </section>
 
       <section className="card" aria-label="Bot check">
-        <h2>3. Quick bot check</h2>
+        <h2>4. Quick bot check</h2>
         <Turnstile siteKey={SITE_KEY} onToken={setToken} resetKey={resetKey} />
         {error && (
           <p className="error" role="alert">
@@ -439,7 +441,7 @@ export default function App() {
       </section>
 
       <section className="card" aria-label="Import into your calendar app">
-        <h2>4. Import into your calendar app</h2>
+        <h2>5. Import into your calendar app</h2>
         <ul className="import-tips">
           <li>
             <strong>Microsoft Outlook</strong> — use the <strong>Import</strong> option. In Outlook for Windows:
@@ -477,6 +479,12 @@ export default function App() {
             Schedule of Calls
           </a>
           . Not affiliated with or endorsed by USAFA or the U.S. Air Force. No schedule data is stored server-side.
+        </p>
+        <p>
+          v{APP_VERSION} ·{' '}
+          <a href={CHANGELOG_URL} target="_blank" rel="noreferrer">
+            change log
+          </a>
         </p>
       </footer>
     </main>
