@@ -18,7 +18,7 @@ async function addEntry(
   }
   if (opts.title) await page.getByLabel(/Course name/).fill(opts.title);
   if (opts.location) await page.getByLabel(/Location/).fill(opts.location);
-  await page.getByRole('button', { name: 'Add to cart' }).click();
+  await page.getByRole('button', { name: 'Add to schedule' }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -113,7 +113,7 @@ test('editing is non-destructive: entries survive reloads and switching edits', 
 
   // Saving an edit updates in place instead of appending a duplicate.
   await page.getByLabel(/Course name/).fill('Course B renamed');
-  await page.getByRole('button', { name: 'Save entry' }).click();
+  await page.getByRole('button', { name: 'Save class' }).click();
   await expect(page.getByText('Course B renamed', { exact: true })).toBeVisible();
   await expect(page.getByRole('listitem')).toHaveCount(2);
 });

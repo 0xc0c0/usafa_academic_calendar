@@ -60,7 +60,7 @@ function SemesterGroup({
   const first = meetings[0];
   const last = meetings[meetings.length - 1];
   return (
-    <section className="card cart-group" aria-label={`${config.name} cart`}>
+    <section className="card cart-group" aria-label={`${config.name} schedule`}>
       <h3>{config.name}</h3>
       <ul className="cart-list">
         {entries.map((entry) => (
@@ -153,7 +153,7 @@ export default function App() {
       setFormNote(`Updated ${label}.`);
     } else {
       setCart((prev) => [...prev, { ...values, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }]);
-      setFormNote(`Added ${label} to the cart.`);
+      setFormNote(`Added ${label} to your schedule.`);
     }
     setEditingId(null);
     clearForm();
@@ -166,13 +166,13 @@ export default function App() {
     setPeriods(entry.periods);
     setTitle(entry.title);
     setLocation(entry.location);
-    setFormNote('Editing this entry — "Save entry" updates it in place.');
+    setFormNote('Editing this class — "Save class" updates it in place.');
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     clearForm();
-    setFormNote('Edit cancelled; the entry is unchanged.');
+    setFormNote('Edit cancelled; the class is unchanged.');
   };
 
   const removeEntry = (id: string) => {
@@ -221,8 +221,8 @@ export default function App() {
       <header className="hero">
         <h1>USAFA Class Schedule → Calendar</h1>
         <p>
-          Pick your semester, M-days or T-days, and class periods. Add each course to the cart, then download a
-          standard <code>.ics</code> file for Google Calendar, Outlook, or Apple Calendar. Every class meeting is a
+          Pick your semester, M-days or T-days, and class periods. Build your schedule one class at a time, then
+          download a standard <code>.ics</code> file for Google Calendar, Outlook, or Apple Calendar. Every class meeting is a
           standalone event with Modified Schedule of Calls days handled automatically.
         </p>
         <p className="disclaimer">
@@ -234,8 +234,8 @@ export default function App() {
         </p>
       </header>
 
-      <section className="card" aria-label="Build a schedule entry">
-        <h2>1. Build an entry</h2>
+      <section className="card" aria-label="Build a class">
+        <h2>1. Build a class</h2>
         <div className="field-row">
           <label>
             Semester
@@ -308,7 +308,7 @@ export default function App() {
         </div>
 
         <button type="button" className="primary" onClick={addToCart}>
-          {editingId ? 'Save entry' : 'Add to cart'}
+          {editingId ? 'Save class' : 'Add to schedule'}
         </button>
         {editingId && (
           <button type="button" className="link" onClick={cancelEdit}>
@@ -327,10 +327,10 @@ export default function App() {
         </p>
       </section>
 
-      <section aria-label="Cart">
-        <h2>2. Your cart</h2>
+      <section aria-label="Your schedule">
+        <h2>2. Your schedule</h2>
         {groups.length === 0 ? (
-          <p className="muted">Nothing yet — add one or more entries above. Multi-period classes welcome.</p>
+          <p className="muted">Nothing on your schedule yet — build a class above. Multi-period classes welcome.</p>
         ) : (
           <>
             {groups.map(({ config, entries }) => (
@@ -355,7 +355,7 @@ export default function App() {
                 setEditingId(null);
               }}
             >
-              Clear cart
+              Clear schedule
             </button>
           </>
         )}

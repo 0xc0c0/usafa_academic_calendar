@@ -25,9 +25,9 @@ See [requirements.md](requirements.md) for the full specification.
 - `src/lib/` — shared core: config validation, schedule expansion (entry →
   dated meetings, contiguous periods merged), RFC 5545 serializer with a
   correct `America/Denver` VTIMEZONE.
-- `src/` — React SPA: shopping-cart UI, live preview, Cloudflare Turnstile.
+- `src/` — React SPA: schedule-builder UI, live preview, Cloudflare Turnstile.
 - `functions/api/generate.ts` — Cloudflare Pages Function: verifies the
-  Turnstile token, re-validates the cart server-side, returns the `.ics`.
+  Turnstile token, re-validates the schedule server-side, returns the `.ics`.
 
 ## Development
 
@@ -45,7 +45,7 @@ Local dev and CI use Cloudflare's [public Turnstile test keys](https://developer
 ```bash
 npm run typecheck  # strict TypeScript
 npm test           # 74 Vitest unit/integration tests
-npm run test:e2e   # Playwright: real browser → cart → captcha → download → parse .ics
+npm run test:e2e   # Playwright: real browser → build schedule → captcha → download → parse .ics
 ```
 
 Coverage highlights:
@@ -70,7 +70,7 @@ Coverage highlights:
 3. Pages project → **Settings → Environment variables** (Production):
    - `VITE_TURNSTILE_SITE_KEY` = site key (build-time)
    - `TURNSTILE_SECRET_KEY` = secret (runtime, encrypt)
-4. Redeploy, then smoke-test: build a cart, download, import into a calendar.
+4. Redeploy, then smoke-test: build a schedule, download, import into a calendar.
 5. Optional: attach a custom domain under **Custom domains**.
 
 ## Adding a future semester
