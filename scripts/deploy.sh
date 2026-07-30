@@ -3,7 +3,8 @@
 #
 # Reads credentials from cloudflare.txt (gitignored) in the repo root:
 #   account_id: <32-hex account id>
-#   api_token:  <API token>
+#   api_token:  <account-owned API token, full cfat_... string>
+# (api_token_2 is preferred over api_token when present.)
 #
 # Token needs: Account > Cloudflare Pages: Edit, Account > Turnstile: Edit,
 #              Zone > DNS: Edit and Zone > Zone: Read for the custom domain's zone.
@@ -13,11 +14,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PROJECT_NAME="usafa-academic-calendar"
-CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-benslab.dev}"
+CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-usafa-calendar.benslab.dev}"
 API="https://api.cloudflare.com/client/v4"
 
 ACCOUNT_ID=$(awk '/^account_id:/{print $2}' cloudflare.txt)
-API_TOKEN=$(awk '/^api_token:/{print $2}' cloudflare.txt)
+# api_token_2 carries Pages+Turnstile permissions; api_token carries Zone DNS.
+API_TOKEN=$(awk '/^api_token_2:/{print $2}' cloudflare.txt)
+[ -n "$API_TOKEN" ] || API_TOKEN=$(awk '/^api_token:/{print $2}' cloudflare.txt)
+DNS_TOKEN=$(awk '/^api_token:/{print $2}' cloudflare.txt)
+[ -n "$DNS_TOKEN" ] || DNS_TOKEN=$API_TOKEN
 export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID" CLOUDFLARE_API_TOKEN="$API_TOKEN"
 
 cf() { # method path [json-body]
@@ -30,10 +35,20 @@ cf() { # method path [json-body]
   fi
 }
 
+cfdns() { # method path [json-body] — DNS ops use the token that has Zone DNS: Edit
+  local method=$1 path=$2 body=${3:-}
+  if [ -n "$body" ]; then
+    curl -sS -X "$method" -H "Authorization: Bearer $DNS_TOKEN" \
+      -H "Content-Type: application/json" -d "$body" "$API$path"
+  else
+    curl -sS -X "$method" -H "Authorization: Bearer $DNS_TOKEN" "$API$path"
+  fi
+}
+
 fail() { echo "ERROR: $*" >&2; exit 1; }
 
 echo "==> Verifying API token"
-cf GET /user/tokens/verify | jq -e '.success' >/dev/null \
+cf GET "/accounts/$ACCOUNT_ID/tokens/verify" | jq -e '.success' >/dev/null \
   || fail "API token is invalid (cloudflare.txt)"
 
 echo "==> Turnstile widget for $CUSTOM_DOMAIN"
@@ -78,14 +93,16 @@ fi
 
 ZONE_NAME=$(echo "$CUSTOM_DOMAIN" | awk -F. '{print $(NF-1)"."$NF}')
 ZONE_ID=$(cf GET "/zones?name=$ZONE_NAME" | jq -r '.result[0].id // empty')
+[ -n "$ZONE_ID" ] || ZONE_ID=$(cfdns GET "/zones?name=$ZONE_NAME" | jq -r '.result[0].id // empty')
 [ -n "$ZONE_ID" ] || fail "zone $ZONE_NAME not found in this account — is the domain on Cloudflare?"
-RECORD=$(cf GET "/zones/$ZONE_ID/dns_records?name=$CUSTOM_DOMAIN" | jq -c '.result[0] // empty')
+RECORD=$(cfdns GET "/zones/$ZONE_ID/dns_records?name=$CUSTOM_DOMAIN" | jq -c '.result[0] // empty')
 TARGET="$PROJECT_NAME.pages.dev"
 if [ -z "$RECORD" ]; then
   echo "    creating CNAME $CUSTOM_DOMAIN -> $TARGET"
-  cf POST "/zones/$ZONE_ID/dns_records" "$(jq -n --arg n "$CUSTOM_DOMAIN" --arg t "$TARGET" \
-    '{type: "CNAME", name: $n, content: $t, proxied: true}')" | jq -e '.success' >/dev/null \
-    || fail "DNS record creation failed"
+  CREATED_DNS=$(cfdns POST "/zones/$ZONE_ID/dns_records" "$(jq -n --arg n "$CUSTOM_DOMAIN" --arg t "$TARGET" \
+    '{type: "CNAME", name: $n, content: $t, proxied: true}')")
+  echo "$CREATED_DNS" | jq -e '.success' >/dev/null \
+    || fail "DNS record creation failed: $(echo "$CREATED_DNS" | jq -c .errors)"
 elif [ "$(echo "$RECORD" | jq -r '.content')" != "$TARGET" ]; then
   echo "    NOTE: $CUSTOM_DOMAIN already has a $(echo "$RECORD" | jq -r '.type') record" \
        "pointing at $(echo "$RECORD" | jq -r '.content') — not touching it." \
