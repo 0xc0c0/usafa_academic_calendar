@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Turnstile from './components/Turnstile.tsx';
+import UndoImportHelp from './components/UndoImportHelp.tsx';
 import { dayLabel } from './lib/config.ts';
 import { icsFilename } from './lib/ics.ts';
 import { expandEntries, expandEntry, genericTitle } from './lib/schedule.ts';
@@ -42,6 +43,7 @@ interface SemesterGroupProps {
    * single-use, so a second concurrent request would 403 in production. */
   anyDownloadInFlight: boolean;
   captchaReady: boolean;
+  onUndoHelp: () => void;
 }
 
 function SemesterGroup({
@@ -54,6 +56,7 @@ function SemesterGroup({
   downloading,
   anyDownloadInFlight,
   captchaReady,
+  onUndoHelp,
 }: SemesterGroupProps) {
   const meetings = useMemo(() => expandEntries(config, entries), [config, entries]);
   const modifiedCount = meetings.filter((m) => m.modifiedSoC).length;
@@ -99,6 +102,13 @@ function SemesterGroup({
         {downloading ? 'Generating…' : `Download ${icsFilename(config)}`}
       </button>
       {!captchaReady && <p className="muted small">Complete the bot check below to enable downloads.</p>}
+      <p className="muted small">
+        Import mistakes are easy to fix —{' '}
+        <button type="button" className="link" onClick={onUndoHelp}>
+          see how to undo an import
+        </button>
+        .
+      </p>
     </section>
   );
 }
@@ -117,6 +127,7 @@ export default function App() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [formNote, setFormNote] = useState('');
+  const [undoHelpOpen, setUndoHelpOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -360,6 +371,7 @@ export default function App() {
                 downloading={downloadingId === config.id}
                 anyDownloadInFlight={downloadingId !== null}
                 captchaReady={token !== null}
+                onUndoHelp={() => setUndoHelpOpen(true)}
               />
             ))}
             <button
@@ -407,7 +419,12 @@ export default function App() {
           Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
           meeting without affecting the rest of the semester.
         </p>
+        <button type="button" className="help-callout" onClick={() => setUndoHelpOpen(true)}>
+          <strong>Imported the wrong thing?</strong> See how to mass-delete the events and undo an import →
+        </button>
       </section>
+
+      <UndoImportHelp open={undoHelpOpen} onClose={() => setUndoHelpOpen(false)} />
 
       <footer className="footer muted small">
         <p>

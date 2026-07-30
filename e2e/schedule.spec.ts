@@ -167,3 +167,18 @@ test('server rejection surfaces a friendly error', async ({ page }) => {
   await downloadButton.click();
   await expect(page.getByRole('alert')).toContainText('Captcha verification failed');
 });
+
+test('undo-import help dialog opens from both entry points and closes', async ({ page }) => {
+  await page.getByRole('button', { name: /Imported the wrong thing/ }).click();
+  const heading = page.getByRole('heading', { name: 'Imported the wrong thing? How to undo it' });
+  await expect(heading).toBeVisible();
+  // Classic Outlook mass-delete steps are expanded by default.
+  await expect(page.getByText('View → Change View → List')).toBeVisible();
+  await page.getByRole('button', { name: 'Close help' }).click();
+  await expect(heading).not.toBeVisible();
+
+  // Also reachable from the link under each semester's download button.
+  await addEntry(page, { dayType: 'M', periods: [1], title: 'CS210' });
+  await page.getByRole('button', { name: 'see how to undo an import' }).click();
+  await expect(heading).toBeVisible();
+});
