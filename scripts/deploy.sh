@@ -109,5 +109,13 @@ elif [ "$(echo "$RECORD" | jq -r '.content')" != "$TARGET" ]; then
        "Point it at $TARGET to serve the app."
 fi
 
+# The edge can cache the SPA-fallback response for brand-new asset URLs hit
+# during the propagation window; purge this deploy's URLs so that never sticks.
+echo "==> Purging edge cache for this deploy's URLs"
+PURGE_FILES=$(ls dist/assets | jq -R -s --arg d "$CUSTOM_DOMAIN" \
+  '{files: ((split("\n") | map(select(length > 0) | "https://\($d)/assets/\(.)")) + ["https://\($d)/"])}')
+cfdns POST "/zones/$ZONE_ID/purge_cache" "$PURGE_FILES" | jq -e '.success' >/dev/null \
+  || echo "    (cache purge failed — stale assets may persist briefly)"
+
 echo
 echo "Done. App: https://$CUSTOM_DOMAIN  (also https://$TARGET)"
