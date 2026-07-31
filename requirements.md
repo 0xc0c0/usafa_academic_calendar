@@ -1,6 +1,6 @@
 # USAFA Academic Calendar → .ics Generator — Requirements
 
-**Status:** Live in production — https://usafa-calendar.benslab.dev · **Last updated:** 2026-07-30
+**Status:** Live in production — https://usafa-calendar.benslab.dev · **Last updated:** 2026-07-31
 **Product owner:** bnheruska@gmail.com
 **Versioning:** every deployed change bumps the version (x.yy.zzz) shown in the site
 footer and gets an entry in [`CHANGELOG.md`](CHANGELOG.md) (newest first).
@@ -177,9 +177,10 @@ schedule", "Build a class" — never cart/shopping language.*
    - **Per-entry day-label option** (v1.3.0): a checkbox appends each event's own
      class-day label to its title, e.g. "CS210 - M35" on day M35. Off by default;
      the server coerces the untrusted flag to a strict boolean.
-   - **DF Time** (v1.5.0): a one-click card in "Your schedule" adds the fixed DF
-     Time entry (every T-day) for the selected semester; nothing to configure, no
-     Edit button, cannot be added twice per semester.
+   - **DF Time** (v1.5.0; own section since v1.6.0): a one-click card in the
+     "Add DF Time (optional)" section adds the fixed DF Time entry (every T-day)
+     for the selected semester; nothing to configure, no Edit button, cannot be
+     added twice per semester.
 4. Entries accumulate in a **cart**: add, edit, remove, clear. Multiple entries are
    allowed (a full course load), including entries on both day types and entries
    with multiple periods. Cart persists across page reloads (localStorage).
@@ -244,6 +245,12 @@ schedule", "Build a class" — never cart/shopping language.*
    can be embedded later (owner to supply).
 3. **Versioning** (v1.6.0): the footer shows the app version, linked to
    `CHANGELOG.md`; every deployed change bumps it.
+4. **Layout** (v1.7.0): on wide screens (≥1100px) the page is two columns —
+   "Build a class", "Add DF Time (optional)", and the import directions in the
+   main column; "Your schedule" and the bot check in a sticky right rail that
+   stays visible while building (e-commerce-cart style). Narrow screens stack
+   one column in task order: build → DF Time → schedule → bot check → import.
+   Section headings are unnumbered (the 1.6.0 step numbers were dropped).
 
 ## 6. Non-functional requirements
 
@@ -303,8 +310,11 @@ schedule", "Build a class" — never cart/shopping language.*
   Verifies the API token, creates/reuses the Turnstile widget and Pages project,
   stores `TURNSTILE_SECRET_KEY` as a Pages secret, builds with
   `VITE_TURNSTILE_SITE_KEY` baked in, deploys `dist/` + `functions/`, attaches the
-  custom domain + proxied CNAME, and purges the deploy's asset URLs from the edge
-  cache.
+  custom domain + proxied CNAME, then runs a purge-and-verify loop on the
+  deploy's asset URLs (purge the edge cache, wait, compare a served asset's byte
+  size against the local build; repeat up to 6 times — v1.7.1/`24370ae`) so a
+  stale or fallback-poisoned edge cache shows up loudly in the deploy output
+  instead of silently serving the old bundle.
 - **Credentials:** gitignored `cloudflare.txt` holds two account-owned tokens
   (`cfat_` prefix; verify via `/accounts/{id}/tokens/verify`): `api_token_2` =
   Pages + Turnstile Edit, `api_token` = Zone DNS Edit + cache purge. **Both expire
