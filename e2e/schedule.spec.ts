@@ -121,7 +121,9 @@ test('editing is non-destructive: entries survive reloads and switching edits', 
   await page.getByLabel(/Course name/).fill('Course B renamed');
   await page.getByRole('button', { name: 'Save class' }).click();
   await expect(page.getByText('Course B renamed', { exact: true })).toBeVisible();
-  // Scoped to the schedule card: the static import-directions list also has listitems.
+  // Scoped to the schedule card defensively: since v1.7.2 the import directions
+  // are <details> disclosures (no listitems), but the undo-help dialog's steps
+  // are lists and must never leak into this count if a future test opens it.
   await expect(page.getByLabel('Fall 2026 schedule').getByRole('listitem')).toHaveCount(2);
 });
 

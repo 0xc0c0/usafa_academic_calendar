@@ -7,6 +7,23 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.7.2 — 2026-07-31
+
+- **Import directions moved into the schedule rail**: instead of a full-width
+  card at the bottom of the builder column, the per-app steps (Outlook /
+  Google / Apple) now sit under "Your schedule" and the bot check as quiet
+  reference — each app a collapsible disclosure, closed by default.
+- **Bot check subdued to match**: both rail support blocks get smaller muted
+  headings and tighter padding, so the schedule itself stays the rail's
+  headline content. The "Imported the wrong thing?" callout stays, restyled
+  quieter.
+- Phones keep the same order (build → DF Time → schedule → bot check →
+  import) and full-size card styling — the subdued treatment is rail-only,
+  since in the single-column flow the bot check is a required step; the
+  collapsible import steps apply everywhere. The CSS re-ordering rules
+  became redundant — the DOM now reads in task order everywhere — and were
+  removed.
+
 ## 1.7.1 — 2026-07-31
 
 - Deploy pipeline hardening: after deploying, the script now purges the

@@ -43,10 +43,11 @@ body {
   max-width: 72ch;
 }
 
-/* Two-column layout on wide screens: build/reference on the left, the
- * schedule + bot check as a sticky rail on the right. Single column below,
- * re-ordered so the schedule and bot check come before the import
- * reference material (the DOM keeps desktop column order). */
+/* Two-column layout on wide screens: build + DF Time on the left, the
+ * schedule with its supporting bot check + import reference as a sticky
+ * rail on the right. Below 1100px the columns flatten into one; DOM order
+ * already reads as the task order (build → DF Time → schedule → bot check
+ * → import). */
 @media (max-width: 1099.98px) {
   .layout {
     display: flex;
@@ -56,22 +57,6 @@ body {
   .col-main,
   .col-rail {
     display: contents;
-  }
-
-  section[aria-label='Build a class'] {
-    order: 1;
-  }
-  section[aria-label='Add DF Time (optional)'] {
-    order: 2;
-  }
-  section[aria-label='Your schedule'] {
-    order: 3;
-  }
-  section[aria-label='Bot check'] {
-    order: 4;
-  }
-  section[aria-label='Import into your calendar app'] {
-    order: 5;
   }
 }
 
@@ -509,13 +494,64 @@ button.link.danger {
   cursor: pointer;
 }
 
-.import-tips {
-  margin: 0;
-  padding-left: 1.2rem;
+/* Supporting blocks under "Your schedule" (bot check, import reference):
+ * present but quiet, so the schedule stays the rail's headline content.
+ * Scoped to the wide-screen rail — in the single-column phone flow the bot
+ * check is a required step and keeps its full-size card treatment. */
+@media (min-width: 1100px) {
+  .rail-aside {
+    padding: 0.8rem 1rem;
+  }
+
+  .rail-aside h2 {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin: 0 0 0.35rem;
+  }
 }
 
-.import-tips li {
-  margin-bottom: 0.5rem;
+.import-app summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+}
+
+.import-app summary:hover,
+.import-app summary:focus-visible {
+  color: var(--usafa-blue);
+}
+
+.import-app + .import-app {
+  border-top: 1px solid var(--border);
+}
+
+.import-app p {
+  margin: 0.15rem 0 0.6rem;
+  padding-left: 1.1rem;
+}
+
+/* Quiet through size, not invisibility: the accent border from the base
+ * .help-callout rule stays so the control still reads as tappable at rest. */
+@media (min-width: 1100px) {
+  .rail-aside .help-callout {
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .rail-aside .help-callout:hover,
+  .rail-aside .help-callout:focus-visible {
+    color: var(--text);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .import-app summary:hover,
+  .import-app summary:focus-visible {
+    color: #8fb4ff;
+  }
 }
 
 .muted {

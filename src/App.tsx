@@ -402,32 +402,6 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card" aria-label="Import into your calendar app">
-        <h2>Import into your calendar app</h2>
-        <ul className="import-tips">
-          <li>
-            <strong>Microsoft Outlook</strong> — use the <strong>Import</strong> option. In Outlook for Windows:
-            File → Open &amp; Export → Import/Export → “Import an iCalendar (.ics) file”, then choose{' '}
-            <strong>Import</strong> (not “Open as New”) so your classes land in your own calendar instead of a
-            separate temporary one. In new Outlook or Outlook on the web: Add calendar → “Upload from file”.
-          </li>
-          <li>
-            <strong>Google Calendar</strong> — Settings (gear icon) → “Import &amp; export” → select the file →
-            Import.
-          </li>
-          <li>
-            <strong>Apple Calendar</strong> — double-click the file, or File → Import.
-          </li>
-        </ul>
-        <p className="muted small">
-          Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
-          meeting without affecting the rest of the semester.
-        </p>
-        <button type="button" className="help-callout" onClick={() => setUndoHelpOpen(true)}>
-          <strong>Imported the wrong thing?</strong> See how to mass-delete the events and{' '}
-          <span className="nowrap">undo an import →</span>
-        </button>
-      </section>
         </div>
 
         <aside className="col-rail">
@@ -470,7 +444,7 @@ export default function App() {
         )}
       </section>
 
-      <section className="card" aria-label="Bot check">
+      <section className="card rail-aside" aria-label="Bot check">
         <h2>Bot check</h2>
         <p className="muted small">A quick automatic check — downloads unlock once it passes.</p>
         <div className="turnstile-slot">
@@ -481,6 +455,35 @@ export default function App() {
             {error}
           </p>
         )}
+      </section>
+
+      <section className="card rail-aside" aria-label="Import into your calendar app">
+        <h2>Import into your calendar app</h2>
+        <details className="import-app">
+          <summary>Microsoft Outlook</summary>
+          <p className="small">
+            Use the <strong>Import</strong> option. In Outlook for Windows: File → Open &amp; Export →
+            Import/Export → “Import an iCalendar (.ics) file”, then choose <strong>Import</strong> (not “Open as
+            New”) so your classes land in your own calendar instead of a separate temporary one. In new Outlook
+            or Outlook on the web: Add calendar → “Upload from file”.
+          </p>
+        </details>
+        <details className="import-app">
+          <summary>Google Calendar</summary>
+          <p className="small">Settings (gear icon) → “Import &amp; export” → select the file → Import.</p>
+        </details>
+        <details className="import-app">
+          <summary>Apple Calendar</summary>
+          <p className="small">Double-click the file, or File → Import.</p>
+        </details>
+        <p className="muted small">
+          Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
+          meeting without affecting the rest of the semester.
+        </p>
+        <button type="button" className="help-callout" onClick={() => setUndoHelpOpen(true)}>
+          <strong>Imported the wrong thing?</strong> See how to mass-delete the events and{' '}
+          <span className="nowrap">undo an import →</span>
+        </button>
       </section>
         </aside>
       </div>

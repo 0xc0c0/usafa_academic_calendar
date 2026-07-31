@@ -237,7 +237,8 @@ schedule", "Build a class" — never cart/shopping language.*
 1. **Import directions** (v1.2.0): a visible section walks through importing the
    .ics into each major calendar app, with Microsoft Outlook listed first and an
    explicit recommendation to use the **Import** option (not "Open as New") in
-   classic Outlook.
+   classic Outlook. Since v1.7.2 the per-app steps are collapsible disclosures
+   in the right rail beneath "Your schedule" and the bot check.
 2. **Undo-an-import helper** (v1.4.0): a modal dialog, reachable from a callout in
    the import section and a link under every download button, gives per-app
    mass-delete directions for recovering from a wrong import, and teaches the
@@ -245,12 +246,13 @@ schedule", "Build a class" — never cart/shopping language.*
    can be embedded later (owner to supply).
 3. **Versioning** (v1.6.0): the footer shows the app version, linked to
    `CHANGELOG.md`; every deployed change bumps it.
-4. **Layout** (v1.7.0): on wide screens (≥1100px) the page is two columns —
-   "Build a class", "Add DF Time (optional)", and the import directions in the
-   main column; "Your schedule" and the bot check in a sticky right rail that
-   stays visible while building (e-commerce-cart style). Narrow screens stack
-   one column in task order: build → DF Time → schedule → bot check → import.
-   Section headings are unnumbered (the 1.6.0 step numbers were dropped).
+4. **Layout** (v1.7.0, refined v1.7.2): on wide screens (≥1100px) the page is
+   two columns — "Build a class" and "Add DF Time (optional)" in the main
+   column; the sticky right rail (e-commerce-cart style) holds "Your schedule"
+   with the bot check and import directions beneath it as subdued support
+   blocks. Narrow screens stack one column in task order: build → DF Time →
+   schedule → bot check → import. Section headings are unnumbered (the 1.6.0
+   step numbers were dropped).
 
 ## 6. Non-functional requirements
 

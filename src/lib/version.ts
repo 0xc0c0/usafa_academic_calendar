@@ -4,7 +4,7 @@
  * package.json's "version" in sync, and adds a matching entry at the TOP of
  * CHANGELOG.md describing the change.
  */
-export const APP_VERSION = '1.7.1';
+export const APP_VERSION = '1.7.2';
 
 export const CHANGELOG_URL =
   'https://github.com/0xc0c0/usafa_academic_calendar/blob/main/CHANGELOG.md';
