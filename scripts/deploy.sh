@@ -109,20 +109,29 @@ elif [ "$(echo "$RECORD" | jq -r '.content')" != "$TARGET" ]; then
        "Point it at $TARGET to serve the app."
 fi
 
-# The edge can cache the SPA-fallback response for brand-new asset URLs hit
-# during the propagation window; purge this deploy's URLs so that never sticks.
-# Purge twice with a settle delay: a request landing between deploy and
-# propagation re-poisons the cache AFTER the first purge (seen live twice).
-echo "==> Purging edge cache for this deploy's URLs"
+# The edge can cache the SPA-fallback response for a brand-new asset URL hit
+# during the propagation window — even a purge can be re-poisoned by a request
+# landing before propagation finishes (seen live twice). So: purge, then poll
+# an asset until the edge provably serves this deploy's bytes, re-purging on
+# each mismatch.
+echo "==> Purging edge cache and verifying the edge serves this deploy"
 PURGE_FILES=$(ls dist/assets | jq -R -s --arg d "$CUSTOM_DOMAIN" \
   '{files: ((split("\n") | map(select(length > 0) | "https://\($d)/assets/\(.)")) + ["https://\($d)/"])}')
-for i in 1 2; do
+CHECK_ASSET=$(ls dist/assets | head -1)
+WANT=$(wc -c < "dist/assets/$CHECK_ASSET")
+GOT=""
+for attempt in 1 2 3 4 5 6; do
   cfdns POST "/zones/$ZONE_ID/purge_cache" "$PURGE_FILES" | jq -e '.success' >/dev/null \
-    || echo "    (cache purge failed — stale assets may persist briefly)"
-  [ "$i" = 1 ] && sleep 8
+    || echo "    (purge request failed on attempt $attempt)"
+  sleep 5
+  GOT=$(curl -s -o /dev/null -w '%{size_download}' "https://$CUSTOM_DOMAIN/assets/$CHECK_ASSET")
+  if [ "$GOT" = "$WANT" ]; then
+    echo "    edge OK: $CHECK_ASSET served $GOT bytes"
+    break
+  fi
+  echo "    attempt $attempt: edge served $GOT bytes (want $WANT) — purging again"
 done
-STATUS=$(curl -s -o /dev/null -w '%{size_download}' "https://$CUSTOM_DOMAIN/assets/$(ls dist/assets | head -1)")
-echo "    spot check: first asset served $STATUS bytes"
+[ "$GOT" = "$WANT" ] || echo "    WARNING: edge still stale after 6 attempts — check manually"
 
 echo
 echo "Done. App: https://$CUSTOM_DOMAIN  (also https://$TARGET)"

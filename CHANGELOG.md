@@ -9,11 +9,12 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ## 1.7.1 — 2026-07-31
 
-- Deploy pipeline hardening: the edge-cache purge now runs twice with a
-  settle delay and spot-checks an asset afterward — a request landing in the
-  propagation window could re-poison a fresh asset URL with the SPA fallback
-  *after* the single purge (observed twice in production). Infrastructure
-  only; no user-facing change.
+- Deploy pipeline hardening: after deploying, the script now purges the
+  edge cache and polls an asset until the edge provably serves this deploy's
+  bytes, re-purging on each mismatch (up to 6 attempts) — a request landing
+  in the propagation window could re-poison a fresh asset URL with the SPA
+  fallback *after* a one-shot purge (observed twice in production).
+  Infrastructure only; no user-facing change.
 
 ## 1.7.0 — 2026-07-31
 
