@@ -92,3 +92,20 @@ describe('POST /api/generate', () => {
     expect((await resp.json()).error).toMatch(/JSON/);
   });
 });
+
+  it('rejects a cart that expands past the event cap with a friendly 400', async () => {
+    mockSiteverify(true);
+    // 25 Both entries × 3 unmergeable runs × 82 days = 6150 events — over MAX_EVENTS.
+    const entries = Array.from({ length: 25 }, (_, i) => ({
+      dayType: 'both',
+      periods: [1, 3, 5],
+      title: `Load ${i + 1}`,
+    }));
+    const resp = await onRequestPost({
+      request: makeRequest({ semesterId: 'fall-2026', turnstileToken: 't', entries }),
+      env: { TURNSTILE_SECRET_KEY: SECRET },
+    });
+    expect(resp.status).toBe(400);
+    const body = (await resp.json()) as { error: string };
+    expect(body.error).toContain('Schedule too large');
+  });

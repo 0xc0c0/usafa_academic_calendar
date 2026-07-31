@@ -7,6 +7,27 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.8.0 — 2026-07-31
+
+- **New "Both" option under "Class meets on"**: a class can now meet on every
+  class day — all 41 M-days and all 41 T-days, 82 events per period. Period
+  tiles read M1/T1 … M6/T6 while Both is selected, untitled classes fall back
+  to "Class — M/T-day Period N", and Modified SoC shifts still apply on the
+  affected days.
+- **All six periods = one full-day block**: selecting every period now makes
+  one continuous event per class day — 0730–1530 on regular days, 0730–1430
+  on Modified SoC days — spanning lunch and CW/DF Time, instead of two
+  lunch-split blocks (M1–M4 and M5–M6). Any smaller selection still follows
+  the usual merge rule.
+- The two compose: Both + all six periods = 82 full-day blocks per semester.
+- **Robustness fixes from the adversarial review**: saved carts are now fully
+  normalized at load (junk period values, missing/duplicate ids, non-boolean
+  flags — a corrupt cart used to white-screen the app); byte-identical events
+  from overlapping entries (an M-days class shadowed by a same-titled "Both"
+  class) are de-duplicated so .ics UIDs stay unique and calendar imports match
+  the promised event count; the server now caps a file at 2,000 events; the
+  intro sentence mentions the third day-type option.
+
 ## 1.7.2 — 2026-07-31
 
 - **Import directions moved into the schedule rail**: instead of a full-width

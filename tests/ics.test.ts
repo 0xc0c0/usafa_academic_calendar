@@ -187,3 +187,18 @@ describe('ICS round-trip through an independent parser (node-ical)', () => {
     expect(events[0].location).toBe('Room 1, Bldg 2');
   });
 });
+
+describe('UID uniqueness with overlapping entries (v1.8.0)', () => {
+  it('an M entry shadowed by a same-titled Both entry yields unique UIDs', () => {
+    const fall = getSemester('fall-2026')!;
+    const base = { semesterId: 'fall-2026', title: 'CS110', location: '', periods: [3 as const] };
+    const entries: ScheduleEntry[] = [
+      { ...base, id: 'a', dayType: 'M' },
+      { ...base, id: 'b', dayType: 'both' },
+    ];
+    const ics = buildIcs(fall, expandEntries(fall, entries), new Date('2026-07-31T12:00:00Z'));
+    const uids = [...ics.matchAll(/UID:([^\r\n]+)/g)].map((m) => m[1]);
+    expect(uids).toHaveLength(82);
+    expect(new Set(uids).size).toBe(82);
+  });
+});

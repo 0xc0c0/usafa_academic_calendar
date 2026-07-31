@@ -169,11 +169,14 @@ user-facing copy frames it as crafting a schedule — "Add to schedule", "Your
 schedule", "Build a class" — never cart/shopping language.*
 1. Visitor picks a **semester** (Fall 2026 / Spring 2027 at launch; list driven by
    discovered config files).
-2. Visitor composes a **schedule entry**: day type (M-days or T-days) + one or more
-   **periods** (1–6, multi-select).
+2. Visitor composes a **schedule entry**: day type (M-days, T-days, or — v1.8.0 —
+   **Both**, meaning every class day: all 41 M-days + all 41 T-days) + one or
+   more **periods** (1–6, multi-select; tiles read "M3/T3" while Both is
+   selected).
 3. Each entry has optional free-text **Title** (course name, e.g. "Comp Sci 110")
    and **Location** (e.g. "Fairchild 2G5"). Blank title falls back to a generic
-   label of the form `Class — <dayType> Period(s) <list>`.
+   label of the form `Class — <dayType> Period(s) <list>` (`M/T-day` for Both
+   entries).
    - **Per-entry day-label option** (v1.3.0): a checkbox appends each event's own
      class-day label to its title, e.g. "CS210 - M35" on day M35. Off by default;
      the server coerces the untrusted flag to a strict boolean.
@@ -197,6 +200,10 @@ schedule", "Build a class" — never cart/shopping language.*
    time gap is only the passing period (≤ 10 minutes) merge into one event.
    Periods 4+5 never merge (lunch gap). Non-contiguous selections (e.g. 1 and 4)
    emit separate events per day.
+   **All-six exception** (v1.8.0, owner decision 2026-07-31): selecting all six
+   periods yields **one continuous event per class day** — period 1's start to
+   period 6's start + 60 min (0730–1530 regular, 0730–1430 Modified SoC) —
+   deliberately spanning lunch and CW/DF Time instead of two lunch-split blocks.
 3. On `modifiedSoC` days, periods 5/6 use the modified times, including the merge
    rule.
    *Event end times for 2 and 3 follow the full-hour rule (§3.2): merged 3+4 event
@@ -209,6 +216,9 @@ schedule", "Build a class" — never cart/shopping language.*
    - `DTSTART`/`DTEND` with `TZID=America/Denver`; file contains a valid `VTIMEZONE`.
    - `UID`: deterministic (stable hash of semester + date + day label + period set +
      title), so re-importing an identical file updates rather than duplicates.
+     Byte-identical meetings from overlapping entries (e.g. an M-days class
+     shadowed by a same-titled Both class) are de-duplicated before
+     serialization so UIDs stay unique within a file (v1.8.0).
    - `DTSTAMP`, `PRODID`, `CALSCALE:GREGORIAN`, `METHOD:PUBLISH`, and
      `X-WR-CALNAME` (e.g. "USAFA Fall 2026").
 5. Output conforms to RFC 5545: CRLF line endings, 75-octet line folding, correct
@@ -225,7 +235,8 @@ schedule", "Build a class" — never cart/shopping language.*
    `TURNSTILE_SECRET_KEY` server-only). Local dev and CI use Cloudflare's published
    always-pass test keypair.
 5. The server re-validates the cart payload against the semester config (unknown
-   semester, bad periods, oversized titles → HTTP 400). Never trust client input.
+   semester, bad periods, oversized titles → HTTP 400) and caps a generated file
+   at 2,000 events (`MAX_EVENTS`, v1.8.0). Never trust client input.
 
 ### FR-4 Public, unauthenticated, private-by-design
 - No accounts, no login, no cookies beyond what Turnstile requires, no analytics

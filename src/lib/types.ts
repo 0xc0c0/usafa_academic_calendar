@@ -3,6 +3,11 @@ export type PeriodNumber = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type DayType = 'M' | 'T';
 
+/** What a schedule entry can meet on: one day type, or 'both' = every class
+ * day (all M-days and all T-days — 82 days in a 41/41 semester). Calendar
+ * days themselves are always exactly 'M' or 'T'. */
+export type EntryDayType = DayType | 'both';
+
 export interface PeriodTime {
   /** 24h local wall-clock, "HH:MM" */
   start: string;
@@ -38,11 +43,12 @@ export interface SemesterConfig {
   days: SemesterDay[];
 }
 
-/** One "shopping cart" item: a course meeting on every M-day or every T-day. */
+/** One "shopping cart" item: a course meeting on every M-day, every T-day,
+ * or (dayType 'both') every class day. */
 export interface ScheduleEntry {
   id: string;
   semesterId: string;
-  dayType: DayType;
+  dayType: EntryDayType;
   periods: PeriodNumber[];
   /** Course name; blank falls back to a generic label */
   title: string;
@@ -72,3 +78,7 @@ export interface Meeting {
 export const MAX_TITLE_LENGTH = 120;
 export const MAX_LOCATION_LENGTH = 120;
 export const MAX_ENTRIES = 25;
+/** Server-side cap on total expanded events per generated file. A real course
+ * load tops out around 600; 'both' entries made the worst case (25 entries ×
+ * 82 days × 3 unmergeable runs ≈ 6150) heavy enough to bound explicitly. */
+export const MAX_EVENTS = 2000;

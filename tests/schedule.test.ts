@@ -220,3 +220,82 @@ describe('validateEntries (untrusted input)', () => {
     expect(() => validateEntries(fall, payload)).toThrow(message);
   });
 });
+
+describe("dayType 'both' (v1.8.0)", () => {
+  it('expands to every class day — 82 meetings in Fall 2026 with M and T labels', () => {
+    const meetings = expandEntry(fall, entry({ dayType: 'both' }));
+    expect(meetings).toHaveLength(82);
+    const labels = new Set(meetings.map((m) => m.dayLabel));
+    expect(labels.has('M1')).toBe(true);
+    expect(labels.has('T1')).toBe(true);
+    expect(new Set(meetings.map((m) => m.date)).size).toBe(82);
+  });
+
+  it('expands to 82 class days in Spring 2027 too', () => {
+    const spring = getSemester('spring-2027')!;
+    expect(expandEntry(spring, entry({ dayType: 'both', semesterId: 'spring-2027' }))).toHaveLength(82);
+  });
+
+  it('falls back to the M/T-day generic title', () => {
+    expect(genericTitle({ dayType: 'both', periods: [3] })).toBe('Class — M/T-day Period 3');
+    expect(genericTitle({ dayType: 'both', periods: [4, 3] })).toBe('Class — M/T-day Periods 3, 4');
+  });
+
+  it("validateEntries accepts 'both' and still rejects junk day types", () => {
+    const cleaned = validateEntries(fall, [{ dayType: 'both', periods: [3] }]);
+    expect(cleaned[0].dayType).toBe('both');
+    expect(() => validateEntries(fall, [{ dayType: 'X', periods: [3] }])).toThrow(/day type/);
+    expect(() => validateEntries(fall, [{ dayType: 'MT', periods: [3] }])).toThrow(/day type/);
+  });
+});
+
+describe('all-six-periods full-day block (v1.8.0)', () => {
+  const allSix: PeriodNumber[] = [1, 2, 3, 4, 5, 6];
+
+  it('renders one continuous event per day instead of two lunch-split blocks', () => {
+    const meetings = expandEntry(fall, entry({ periods: allSix }));
+    expect(meetings).toHaveLength(41); // one per M-day, not two
+    const m35 = meetings.find((m) => m.dayLabel === 'M35')!;
+    expect(m35.start).toBe('07:30');
+    expect(m35.end).toBe('15:30'); // period 6 starts 14:30, full-hour end
+    expect(m35.periods).toEqual(allSix);
+  });
+
+  it('ends an hour earlier on Modified SoC days', () => {
+    const meetings = expandEntry(fall, entry({ periods: allSix }));
+    const m4 = meetings.find((m) => m.dayLabel === 'M4')!;
+    expect(m4.modifiedSoC).toBe(true);
+    expect(m4.start).toBe('07:30');
+    expect(m4.end).toBe('14:30'); // modified period 6 starts 13:30
+  });
+
+  it("combines with dayType 'both': 82 full-day blocks", () => {
+    const meetings = expandEntry(fall, entry({ dayType: 'both', periods: allSix }));
+    expect(meetings).toHaveLength(82);
+    expect(meetings.every((m) => m.start === '07:30')).toBe(true);
+  });
+
+  it('five periods still split at lunch — no accidental full-day block', () => {
+    const meetings = expandEntry(fall, entry({ periods: [1, 2, 3, 4, 5] }));
+    expect(meetings).toHaveLength(82); // 41 M-days × two runs (1-4 and 5)
+  });
+});
+
+describe('overlapping-entry dedupe (v1.8.0)', () => {
+  it("drops byte-identical meetings when a Both entry shadows an M entry", () => {
+    const meetings = expandEntries(fall, [
+      entry({ id: 'a', dayType: 'M', periods: [3], title: 'CS110' }),
+      entry({ id: 'b', dayType: 'both', periods: [3], title: 'CS110' }),
+    ]);
+    expect(meetings).toHaveLength(82); // not 123: the 41 M-day duplicates collapse
+    expect(new Set(meetings.map((m) => m.date)).size).toBe(82);
+  });
+
+  it('keeps distinct meetings when titles differ', () => {
+    const meetings = expandEntries(fall, [
+      entry({ id: 'a', dayType: 'M', periods: [3], title: 'CS110' }),
+      entry({ id: 'b', dayType: 'both', periods: [3], title: 'History 202' }),
+    ]);
+    expect(meetings).toHaveLength(123);
+  });
+});

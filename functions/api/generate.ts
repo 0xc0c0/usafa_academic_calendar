@@ -1,6 +1,7 @@
 import { buildIcs, icsFilename } from '../../src/lib/ics.ts';
 import { expandEntries, validateEntries } from '../../src/lib/schedule.ts';
 import { getSemester } from '../../src/lib/semesters.ts';
+import { MAX_EVENTS } from '../../src/lib/types.ts';
 
 interface Env {
   TURNSTILE_SECRET_KEY?: string;
@@ -66,6 +67,9 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     const entries = validateEntries(semester, body.entries);
     const meetings = expandEntries(semester, entries);
+    if (meetings.length > MAX_EVENTS) {
+      return jsonError(400, `Schedule too large (${meetings.length} events; max ${MAX_EVENTS}). Remove some entries and try again.`);
+    }
     const ics = buildIcs(semester, meetings);
     return new Response(ics, {
       status: 200,

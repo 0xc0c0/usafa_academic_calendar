@@ -67,7 +67,8 @@ export function mergePeriods(
 export function genericTitle(entry: Pick<ScheduleEntry, 'dayType' | 'periods'>): string {
   const list = [...new Set(entry.periods)].sort((a, b) => a - b).join(', ');
   const plural = entry.periods.length > 1 ? 's' : '';
-  return `Class — ${entry.dayType}-day Period${plural} ${list}`;
+  const kind = entry.dayType === 'both' ? 'M/T-day' : `${entry.dayType}-day`;
+  return `Class — ${kind} Period${plural} ${list}`;
 }
 
 /** Expand the fixed DF Time block: every T-day, between lunch and 5th period. */
@@ -95,14 +96,22 @@ function expandDfTime(config: SemesterConfig): Meeting[] {
   return meetings;
 }
 
-/** Expand one cart entry into concrete meetings (one per class day of its type). */
+/** Expand one cart entry into concrete meetings (one per class day of its
+ * type; dayType 'both' matches every class day). */
 export function expandEntry(config: SemesterConfig, entry: ScheduleEntry): Meeting[] {
   if (entry.kind === 'dfTime') return expandDfTime(config);
   const title = entry.title.trim() || genericTitle(entry);
+  // All six periods = the whole class day: one continuous event spanning
+  // lunch and CW/DF Time (owner decision 2026-07-31), instead of the merge
+  // rule's two blocks split at lunch. Checked against the exact set 1-6, not
+  // just distinct-count, so junk values can never fake a full day.
+  const selected = new Set(entry.periods);
+  const allSix = ([1, 2, 3, 4, 5, 6] as PeriodNumber[]).every((p) => selected.has(p));
   const meetings: Meeting[] = [];
   for (const day of config.days) {
-    if (day.dayType !== entry.dayType) continue;
-    for (const run of mergePeriods(config, day, entry.periods)) {
+    if (entry.dayType !== 'both' && day.dayType !== entry.dayType) continue;
+    const runs = allSix ? [[1, 2, 3, 4, 5, 6] as PeriodNumber[]] : mergePeriods(config, day, entry.periods);
+    for (const run of runs) {
       const start = periodTimesFor(config, day, run[0]).start;
       const end = fullHourEnd(periodTimesFor(config, day, run[run.length - 1]).start);
       const label = dayLabel(day);
@@ -129,7 +138,17 @@ export function expandEntry(config: SemesterConfig, entry: ScheduleEntry): Meeti
 export function expandEntries(config: SemesterConfig, entries: ScheduleEntry[]): Meeting[] {
   const meetings = entries.flatMap((e) => expandEntry(config, e));
   meetings.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
-  return meetings;
+  // Overlapping entries (e.g. an M-days class alongside a same-titled Both
+  // class) would emit byte-identical events with colliding UIDs — calendar
+  // apps keep one event per UID and silently drop the rest. Drop exact
+  // duplicates here so counts, the .ics file, and imports all agree.
+  const seen = new Set<string>();
+  return meetings.filter((m) => {
+    const key = `${m.date}|${m.start}|${m.end}|${m.title}|${m.location}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -155,7 +174,9 @@ export function validateEntries(config: SemesterConfig, raw: unknown): ScheduleE
         kind: 'dfTime' as const,
       };
     }
-    if (e.dayType !== 'M' && e.dayType !== 'T') throw new Error(`Entry ${i + 1}: day type must be M or T.`);
+    if (e.dayType !== 'M' && e.dayType !== 'T' && e.dayType !== 'both') {
+      throw new Error(`Entry ${i + 1}: day type must be M, T, or both.`);
+    }
     if (!Array.isArray(e.periods) || e.periods.length === 0) throw new Error(`Entry ${i + 1}: pick at least one period.`);
     const periods = [...new Set(e.periods)];
     if (periods.length > 6 || periods.some((p) => typeof p !== 'number' || !Number.isInteger(p) || p < 1 || p > 6)) {

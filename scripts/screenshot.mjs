@@ -15,6 +15,7 @@ const CART = [
   { id: 'c', semesterId: 'fall-2026', dayType: 'M', periods: [5, 6], title: 'Aero Lab', location: '', includeDayLabel: true },
   { id: 'd', semesterId: 'fall-2026', dayType: 'T', periods: [], title: 'DF Time', location: '', kind: 'dfTime' },
   { id: 'e', semesterId: 'spring-2027', dayType: 'M', periods: [2], title: 'History 202', location: '' },
+  { id: 'f', semesterId: 'fall-2026', dayType: 'both', periods: [1, 2, 3, 4, 5, 6], title: 'Wing Training', location: '' },
 ];
 
 const browser = await chromium.launch();

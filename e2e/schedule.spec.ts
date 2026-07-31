@@ -10,11 +10,19 @@ async function parseDownload(download: Download) {
 
 async function addEntry(
   page: Page,
-  opts: { dayType: 'M' | 'T'; periods: number[]; title?: string; location?: string; includeDayLabel?: boolean },
+  opts: {
+    dayType: 'M' | 'T' | 'both';
+    periods: number[];
+    title?: string;
+    location?: string;
+    includeDayLabel?: boolean;
+  },
 ) {
-  await page.getByRole('radio', { name: `${opts.dayType}-days` }).check();
+  await page.getByRole('radio', { name: opts.dayType === 'both' ? 'Both' : `${opts.dayType}-days` }).check();
   for (const p of opts.periods) {
-    await page.getByRole('checkbox', { name: new RegExp(`^${opts.dayType}${p} `) }).check();
+    // Tiles read "M3 0930–1023" normally, "M3/T3 0930–1023" under Both.
+    const tile = opts.dayType === 'both' ? `^M${p}/T${p} ` : `^${opts.dayType}${p} `;
+    await page.getByRole('checkbox', { name: new RegExp(tile) }).check();
   }
   if (opts.title) await page.getByLabel(/Course name/).fill(opts.title);
   if (opts.location) await page.getByLabel(/Location/).fill(opts.location);
@@ -213,4 +221,36 @@ test('DF Time: one click adds every T-day 1230-1330, downloads correctly, cannot
   expect(t1.end.toISOString()).toBe('2026-08-07T19:30:00.000Z'); // 1330 MDT
   const t35 = events.find((e) => e.start.toISOString().startsWith('2026-11-18'))!; // T35, MST
   expect(t35.start.toISOString()).toBe('2026-11-18T19:30:00.000Z'); // 1230 MST
+});
+
+test('Both + all six periods: one continuous block on every class day', async ({ page }) => {
+  await addEntry(page, { dayType: 'both', periods: [1, 2, 3, 4, 5, 6], title: 'Cadet Day' });
+
+  // 41 M-days + 41 T-days, one full-day block each (not lunch-split pairs).
+  await expect(page.getByText(/M\/T-days, periods 1, 2, 3, 4, 5, 6 — 82 class days · 82 calendar events/)).toBeVisible();
+
+  const downloadButton = page.getByRole('button', { name: /Download usafa-fall-2026\.ics/ });
+  await expect(downloadButton).toBeEnabled({ timeout: 30_000 });
+  const downloadPromise = page.waitForEvent('download');
+  await downloadButton.click();
+  const events = await parseDownload(await downloadPromise);
+
+  expect(events).toHaveLength(82);
+  expect(new Set(events.map((e) => e.start.toISOString().slice(0, 10))).size).toBe(82);
+  expect(new Set(events.map((e) => e.summary))).toEqual(new Set(['Cadet Day']));
+
+  // M1 (2026-08-06, regular): 0730–1530 MDT, spanning lunch.
+  const m1 = events.find((e) => e.start.toISOString().startsWith('2026-08-06'))!;
+  expect(m1.start.toISOString()).toBe('2026-08-06T13:30:00.000Z');
+  expect(m1.end.toISOString()).toBe('2026-08-06T21:30:00.000Z');
+
+  // T1 (2026-08-07): T-days included too, same block.
+  const t1 = events.find((e) => e.start.toISOString().startsWith('2026-08-07'))!;
+  expect(t1.start.toISOString()).toBe('2026-08-07T13:30:00.000Z');
+  expect(t1.end.toISOString()).toBe('2026-08-07T21:30:00.000Z');
+
+  // M4 (2026-08-14, Modified SoC): afternoon shifts an hour early → 0730–1430 MDT.
+  const m4 = events.find((e) => e.start.toISOString().startsWith('2026-08-14'))!;
+  expect(m4.start.toISOString()).toBe('2026-08-14T13:30:00.000Z');
+  expect(m4.end.toISOString()).toBe('2026-08-14T20:30:00.000Z');
 });

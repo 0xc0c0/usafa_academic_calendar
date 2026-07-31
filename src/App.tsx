@@ -6,7 +6,7 @@ import { icsFilename } from './lib/ics.ts';
 import { expandEntries, expandEntry, fullHourEnd, genericTitle } from './lib/schedule.ts';
 import { SEMESTERS, getSemester } from './lib/semesters.ts';
 import { APP_VERSION, CHANGELOG_URL } from './lib/version.ts';
-import type { DayType, PeriodNumber, ScheduleEntry, SemesterConfig } from './lib/types.ts';
+import type { EntryDayType, PeriodNumber, ScheduleEntry, SemesterConfig } from './lib/types.ts';
 import { MAX_LOCATION_LENGTH, MAX_TITLE_LENGTH } from './lib/types.ts';
 
 const SITE_KEY: string = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -20,7 +20,30 @@ function loadCart(): ScheduleEntry[] {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as ScheduleEntry[];
-    return Array.isArray(parsed) ? parsed.filter((e) => getSemester(e.semesterId)) : [];
+    if (!Array.isArray(parsed)) return [];
+    // Normalize defensively: a stale or hand-edited cart must never crash the
+    // app at startup (expandEntry calls .trim() on title/location and looks
+    // period numbers up in the Schedule of Calls, so values must be 1-6).
+    const seenIds = new Set<string>();
+    return parsed
+      .filter((e): e is ScheduleEntry => !!e && typeof e === 'object' && !!getSemester(e.semesterId))
+      .map((e) => {
+        // Ids drive Remove/Edit targeting — regenerate missing or duplicated ones.
+        let id = typeof e.id === 'string' ? e.id.slice(0, 40) : '';
+        if (!id || seenIds.has(id)) id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        seenIds.add(id);
+        return {
+          ...e,
+          id,
+          title: typeof e.title === 'string' ? e.title : '',
+          location: typeof e.location === 'string' ? e.location : '',
+          includeDayLabel: e.includeDayLabel === true, // match the server's strict coercion
+          periods: Array.isArray(e.periods)
+            ? [...new Set((e.periods as unknown[]).filter((p): p is PeriodNumber => Number.isInteger(p) && (p as number) >= 1 && (p as number) <= 6))].sort((a, b) => a - b)
+            : [],
+        };
+      })
+      .filter((e) => e.kind === 'dfTime' || (['M', 'T', 'both'].includes(e.dayType) && e.periods.length > 0));
   } catch {
     return [];
   }
@@ -89,7 +112,7 @@ function SemesterGroup({
                 ? `T-days, ${military(config.scheduleOfCalls.dfTime.start)}–${military(
                     fullHourEnd(config.scheduleOfCalls.dfTime.start),
                   )} — ${describeEntry(config, entry)}`
-                : `${entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
+                : `${entry.dayType === 'both' ? 'M/T' : entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
               {entry.includeDayLabel && ' · class day in titles'}
             </div>
           </li>
@@ -120,7 +143,7 @@ function SemesterGroup({
 
 export default function App() {
   const [semesterId, setSemesterId] = useState(SEMESTERS[0].id);
-  const [dayType, setDayType] = useState<DayType>('M');
+  const [dayType, setDayType] = useState<EntryDayType>('M');
   const [periods, setPeriods] = useState<PeriodNumber[]>([]);
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -139,7 +162,11 @@ export default function App() {
   }, [cart]);
 
   const formConfig = getSemester(semesterId)!;
-  const sampleDay = formConfig.days.find((d) => d.dayType === dayType)!;
+  const sampleDay = formConfig.days.find((d) => dayType === 'both' || d.dayType === dayType)!;
+  /** Period label under the current day-type choice: "M3", "T3", or "M3/T3". */
+  const pLabel = (p: number) => (dayType === 'both' ? `M${p}/T${p}` : `${dayType}${p}`);
+  /** Day-label example for copy; 'both' shows an M-day (labels are per-event anyway). */
+  const exampleDayLabel = dayType === 'T' ? 'T35' : 'M35';
 
   const togglePeriod = (p: PeriodNumber) => {
     setPeriods((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p].sort((a, b) => a - b)));
@@ -262,7 +289,7 @@ export default function App() {
           USAFA Class Schedule <span className="nowrap">→ Calendar</span>
         </h1>
         <p>
-          Pick your semester, M-days or T-days, and class periods. Build your schedule one class at a time, then
+          Pick your semester, M-days, T-days, or both, and class periods. Build your schedule one class at a time, then
           download a standard <code>.ics</code> file for Google Calendar, Outlook, or Apple Calendar. Every class meeting is a
           standalone event with Modified Schedule of Calls days handled automatically.
         </p>
@@ -292,10 +319,16 @@ export default function App() {
           </label>
           <fieldset className="daytype">
             <legend>Class meets on</legend>
-            {(['M', 'T'] as DayType[]).map((t) => (
-              <label key={t} className="radio">
-                <input type="radio" name="daytype" checked={dayType === t} onChange={() => setDayType(t)} />
-                {t}-days
+            {(
+              [
+                { value: 'M', label: 'M-days' },
+                { value: 'T', label: 'T-days' },
+                { value: 'both', label: 'Both' },
+              ] as { value: EntryDayType; label: string }[]
+            ).map(({ value, label }) => (
+              <label key={value} className="radio">
+                <input type="radio" name="daytype" checked={dayType === value} onChange={() => setDayType(value)} />
+                {label}
               </label>
             ))}
           </fieldset>
@@ -309,10 +342,7 @@ export default function App() {
               return (
                 <label key={p} className={`period ${periods.includes(p) ? 'selected' : ''}`}>
                   <input type="checkbox" checked={periods.includes(p)} onChange={() => togglePeriod(p)} />
-                  <span className="period-name">
-                    {dayType}
-                    {p}
-                  </span>
+                  <span className="period-name">{pLabel(p)}</span>
                   <span className="period-time">
                     {military(t.start)}–{military(t.end)}
                   </span>
@@ -323,8 +353,8 @@ export default function App() {
           <p className="muted small">
             Times shown are the official Schedule of Calls; calendar events run a full hour from each start (a
             0930 class becomes a 0930–1030 event) so they line up with other meeting invites. Back-to-back
-            periods like {dayType}3 + {dayType}4 merge into one event, and on “Modified SoC” days periods 5–6
-            automatically shift an hour earlier.
+            periods like {pLabel(3)} + {pLabel(4)} merge into one event, selecting all six makes one continuous
+            full-day event, and on “Modified SoC” days periods 5–6 automatically shift an hour earlier.
           </p>
         </fieldset>
 
@@ -361,8 +391,8 @@ export default function App() {
             checked={includeDayLabel}
             onChange={(e) => setIncludeDayLabel(e.target.checked)}
           />
-          Include the class day in each event title — e.g. “{title.trim() || 'CS210'} - {dayType}35” on class day{' '}
-          {dayType}35
+          Include the class day in each event title — e.g. “{title.trim() || 'CS210'} - {exampleDayLabel}” on
+          class day {exampleDayLabel}
         </label>
 
         <button type="button" className="primary" onClick={addToCart}>
@@ -379,7 +409,7 @@ export default function App() {
           </p>
         )}
         <p className="muted small">
-          Example: on class day {dayLabel(sampleDay)} ({sampleDay.date}), period {dayType}3 meets{' '}
+          Example: on class day {dayLabel(sampleDay)} ({sampleDay.date}), period {sampleDay.dayType}3 meets{' '}
           {military(formConfig.scheduleOfCalls.periods['3'].start)}–
           {military(formConfig.scheduleOfCalls.periods['3'].end)} and appears on your calendar as{' '}
           {military(formConfig.scheduleOfCalls.periods['3'].start)}–
