@@ -242,8 +242,8 @@ schedule", "Build a class" — never cart/shopping language.*
 2. **Undo-an-import helper** (v1.4.0): a modal dialog, reachable from a callout in
    the import section and a link under every download button, gives per-app
    mass-delete directions for recovering from a wrong import, and teaches the
-   import-into-its-own-calendar habit. Structured so Windows Outlook screenshots
-   can be embedded later (owner to supply).
+   import-into-its-own-calendar habit. Text-only by design (owner decision
+   2026-07-31: embedded Outlook screenshots aren't needed).
 3. **Versioning** (v1.6.0): the footer shows the app version, linked to
    `CHANGELOG.md`; every deployed change bumps it.
 4. **Layout** (v1.7.0, refined v1.7.2): on wide screens (≥1100px) the page is
@@ -341,5 +341,5 @@ schedule", "Build a class" — never cart/shopping language.*
 3. Branding: default "unofficial — verify against the official USAFA calendar"
    disclaimer stands.
 
-Outstanding (non-blocking): owner to supply Windows 11 screenshots for the
-Outlook sections of the undo-import helper (§FR-5.2).
+No outstanding items. (The formerly-outstanding Outlook screenshots for the
+undo-import helper were dropped by owner decision 2026-07-31 — see FR-5.2.)
