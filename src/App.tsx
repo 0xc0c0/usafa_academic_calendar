@@ -73,14 +73,6 @@ function SemesterGroup({
               <strong>{entry.title.trim() || genericTitle(entry)}</strong>
               {entry.id === editingId && <span className="editing-badge"> editing…</span>}
               {entry.location.trim() && <span className="muted"> · {entry.location}</span>}
-              <div className="muted small">
-                {entry.kind === 'dfTime'
-                  ? `T-days, ${military(config.scheduleOfCalls.dfTime.start)}–${military(
-                      fullHourEnd(config.scheduleOfCalls.dfTime.start),
-                    )} — ${describeEntry(config, entry)}`
-                  : `${entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
-                {entry.includeDayLabel && ' · class day in titles'}
-              </div>
             </div>
             <div className="cart-actions">
               {entry.kind !== 'dfTime' && (
@@ -91,6 +83,14 @@ function SemesterGroup({
               <button type="button" className="link danger" onClick={() => onRemove(entry.id)}>
                 Remove
               </button>
+            </div>
+            <div className="cart-meta muted small">
+              {entry.kind === 'dfTime'
+                ? `T-days, ${military(config.scheduleOfCalls.dfTime.start)}–${military(
+                    fullHourEnd(config.scheduleOfCalls.dfTime.start),
+                  )} — ${describeEntry(config, entry)}`
+                : `${entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
+              {entry.includeDayLabel && ' · class day in titles'}
             </div>
           </li>
         ))}
@@ -107,13 +107,12 @@ function SemesterGroup({
       >
         {downloading ? 'Generating…' : `Download ${icsFilename(config)}`}
       </button>
-      {!captchaReady && <p className="muted small">Complete the bot check below to enable downloads.</p>}
+      {!captchaReady && <p className="muted small">Complete the bot check to enable downloads.</p>}
       <p className="muted small">
         Import mistakes are easy to fix —{' '}
         <button type="button" className="link" onClick={onUndoHelp}>
           see how to undo an import
         </button>
-        .
       </p>
     </section>
   );
@@ -259,7 +258,9 @@ export default function App() {
   return (
     <main className="page">
       <header className="hero">
-        <h1>USAFA Class Schedule → Calendar</h1>
+        <h1>
+          USAFA Class Schedule <span className="nowrap">→ Calendar</span>
+        </h1>
         <p>
           Pick your semester, M-days or T-days, and class periods. Build your schedule one class at a time, then
           download a standard <code>.ics</code> file for Google Calendar, Outlook, or Apple Calendar. Every class meeting is a
@@ -274,8 +275,10 @@ export default function App() {
         </p>
       </header>
 
+      <div className="layout">
+        <div className="col-main">
       <section className="card" aria-label="Build a class">
-        <h2>1. Build a class</h2>
+        <h2>Build a class</h2>
         <div className="field-row">
           <label>
             Semester
@@ -299,7 +302,7 @@ export default function App() {
         </div>
 
         <fieldset className="periods">
-          <legend>Periods (times shown are the regular Schedule of Calls)</legend>
+          <legend>Periods</legend>
           <div className="period-grid">
             {ALL_PERIODS.map((p) => {
               const t = formConfig.scheduleOfCalls.periods[String(p)];
@@ -318,16 +321,18 @@ export default function App() {
             })}
           </div>
           <p className="muted small">
-            On days marked “Modified SoC” on the academic calendar, periods 5–6 start one hour earlier (1230 and
-            1330). That’s applied automatically to the affected dates. Back-to-back periods (like {dayType}3 +{' '}
-            {dayType}4) become one continuous event. Calendar events run a full hour from each period’s start
-            (rather than ending at the official :23 dismissal), so they line up with other meeting invites.
+            Times shown are the official Schedule of Calls; calendar events run a full hour from each start (a
+            0930 class becomes a 0930–1030 event) so they line up with other meeting invites. Back-to-back
+            periods like {dayType}3 + {dayType}4 merge into one event, and on “Modified SoC” days periods 5–6
+            automatically shift an hour earlier.
           </p>
         </fieldset>
 
         <div className="field-row">
           <label>
-            Course name <span className="muted small">(optional)</span>
+            <span>
+              Course name <span className="muted small">(optional)</span>
+            </span>
             <input
               type="text"
               value={title}
@@ -337,7 +342,9 @@ export default function App() {
             />
           </label>
           <label>
-            Location <span className="muted small">(optional)</span>
+            <span>
+              Location <span className="muted small">(optional)</span>
+            </span>
             <input
               type="text"
               value={location}
@@ -381,7 +388,7 @@ export default function App() {
       </section>
 
       <section className="card" aria-label="Add DF Time (optional)">
-        <h2>2. Add DF Time (optional)</h2>
+        <h2>Add DF Time (optional)</h2>
         <div className="df-card">
           <div className="muted small">
             The Dean's extra-instruction and advising block between lunch and 5th period — every T-day,{' '}
@@ -395,10 +402,43 @@ export default function App() {
         </div>
       </section>
 
+      <section className="card" aria-label="Import into your calendar app">
+        <h2>Import into your calendar app</h2>
+        <ul className="import-tips">
+          <li>
+            <strong>Microsoft Outlook</strong> — use the <strong>Import</strong> option. In Outlook for Windows:
+            File → Open &amp; Export → Import/Export → “Import an iCalendar (.ics) file”, then choose{' '}
+            <strong>Import</strong> (not “Open as New”) so your classes land in your own calendar instead of a
+            separate temporary one. In new Outlook or Outlook on the web: Add calendar → “Upload from file”.
+          </li>
+          <li>
+            <strong>Google Calendar</strong> — Settings (gear icon) → “Import &amp; export” → select the file →
+            Import.
+          </li>
+          <li>
+            <strong>Apple Calendar</strong> — double-click the file, or File → Import.
+          </li>
+        </ul>
+        <p className="muted small">
+          Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
+          meeting without affecting the rest of the semester.
+        </p>
+        <button type="button" className="help-callout" onClick={() => setUndoHelpOpen(true)}>
+          <strong>Imported the wrong thing?</strong> See how to mass-delete the events and{' '}
+          <span className="nowrap">undo an import →</span>
+        </button>
+      </section>
+        </div>
+
+        <aside className="col-rail">
       <section aria-label="Your schedule">
-        <h2>3. Your schedule</h2>
+        <h2>Your schedule</h2>
         {groups.length === 0 ? (
-          <p className="muted">Nothing on your schedule yet — build a class above. Multi-period classes welcome.</p>
+          <div className="card">
+            <p className="muted">
+              Nothing here yet — add a class from the builder and it will appear here, grouped by semester.
+            </p>
+          </div>
         ) : (
           <>
             {groups.map(({ config, entries }) => (
@@ -431,40 +471,19 @@ export default function App() {
       </section>
 
       <section className="card" aria-label="Bot check">
-        <h2>4. Quick bot check</h2>
-        <Turnstile siteKey={SITE_KEY} onToken={setToken} resetKey={resetKey} />
+        <h2>Bot check</h2>
+        <p className="muted small">A quick automatic check — downloads unlock once it passes.</p>
+        <div className="turnstile-slot">
+          <Turnstile siteKey={SITE_KEY} onToken={setToken} resetKey={resetKey} />
+        </div>
         {error && (
           <p className="error" role="alert">
             {error}
           </p>
         )}
       </section>
-
-      <section className="card" aria-label="Import into your calendar app">
-        <h2>5. Import into your calendar app</h2>
-        <ul className="import-tips">
-          <li>
-            <strong>Microsoft Outlook</strong> — use the <strong>Import</strong> option. In Outlook for Windows:
-            File → Open &amp; Export → Import/Export → “Import an iCalendar (.ics) file”, then choose{' '}
-            <strong>Import</strong> (not “Open as New”) so your classes land in your own calendar instead of a
-            separate temporary one. In new Outlook or Outlook on the web: Add calendar → “Upload from file”.
-          </li>
-          <li>
-            <strong>Google Calendar</strong> — Settings (gear icon) → “Import &amp; export” → select the file →
-            Import.
-          </li>
-          <li>
-            <strong>Apple Calendar</strong> — double-click the file, or File → Import.
-          </li>
-        </ul>
-        <p className="muted small">
-          Every class meeting is a standalone event (no recurrence rule), so you can delete or move a single
-          meeting without affecting the rest of the semester.
-        </p>
-        <button type="button" className="help-callout" onClick={() => setUndoHelpOpen(true)}>
-          <strong>Imported the wrong thing?</strong> See how to mass-delete the events and undo an import →
-        </button>
-      </section>
+        </aside>
+      </div>
 
       <UndoImportHelp open={undoHelpOpen} onClose={() => setUndoHelpOpen(false)} />
 

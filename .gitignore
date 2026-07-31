@@ -8,3 +8,4 @@ validation-output/
 *.local
 .DS_Store
 cloudflare.txt
+.design-shots/

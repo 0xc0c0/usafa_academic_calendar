@@ -7,6 +7,32 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.7.0 — 2026-07-31
+
+- **Two-column layout on wide screens**: the class builder, DF Time, and
+  import directions sit on the left; **"Your schedule" is now a sticky right
+  rail** with the bot check, so the schedule stays in view while you build.
+  Mobile keeps a single column in task order (build → schedule → bot check →
+  import). Step numbers dropped from headings — the sequence no longer reads
+  top-to-bottom on desktop.
+- **Periods strip redesigned**: all six periods on one row (three per row on
+  phones — no more 5+1 orphan), centered name/time tiles, a proper circular
+  check indicator instead of a floating native checkbox, single-ring selected
+  state, and a tightened explainer note.
+- **Cleanliness pass from a three-lens design review** (hierarchy, mobile +
+  dark parity, first-visit UX): "Class meets on" radios now sit in a row under
+  their label (a CSS specificity bug stacked the dots on top of the text),
+  "(optional)" stays inline with field labels, schedule-entry meta lines span
+  the full card width instead of wrapping in a squeezed column, Edit/Remove
+  are quiet until hovered with larger touch targets, disabled buttons use
+  explicit readable colors instead of 50% opacity (the .ics filename was
+  ~2:1 contrast), the bot check card explains itself and never renders as an
+  empty box, the empty schedule state is carded, the rail's inner scrollbar
+  is always visible, and arrow/label orphan-wrapping is fixed.
+- Nested fieldset borders removed — the card is the frame.
+- New `scripts/screenshot.mjs`: Playwright harness that captures the states
+  used for this visual review (light/dark, desktop/mobile, closeups).
+
 ## 1.6.0 — 2026-07-30
 
 - **Version number now visible in the site footer**, linking to this change log.

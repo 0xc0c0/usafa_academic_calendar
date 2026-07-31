@@ -1,7 +1,7 @@
 {
   "name": "usafa-academic-calendar",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.7.0",
   "type": "module",
   "description": "Build a USAFA M/T-day class schedule and download it as an .ics calendar file",
   "scripts": {
