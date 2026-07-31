@@ -7,6 +7,14 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.7.1 — 2026-07-31
+
+- Deploy pipeline hardening: the edge-cache purge now runs twice with a
+  settle delay and spot-checks an asset afterward — a request landing in the
+  propagation window could re-poison a fresh asset URL with the SPA fallback
+  *after* the single purge (observed twice in production). Infrastructure
+  only; no user-facing change.
+
 ## 1.7.0 — 2026-07-31
 
 - **Two-column layout on wide screens**: the class builder, DF Time, and
