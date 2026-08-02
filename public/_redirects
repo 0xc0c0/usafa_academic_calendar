@@ -1,3 +1,8 @@
 # Consolidate the pages.dev mirror onto the canonical custom domain so
 # search engines see one URL (Cloudflare Pages host-based redirect).
 https://usafa-academic-calendar.pages.dev/* https://usafa-calendar.benslab.dev/:splat 301
+
+# Google Search Console fetches the verification file at its exact .html
+# URL, but Pages' pretty-URL normalization 308s *.html to the extensionless
+# path. This 200 rewrite serves the token at the exact URL instead.
+/googlee64d39d2521d8e82.html /googlee64d39d2521d8e82 200

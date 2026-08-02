@@ -7,6 +7,14 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.9.2 — 2026-08-02
+
+- Fixed the Google Search Console verification file returning an empty 308:
+  Cloudflare Pages' pretty-URL normalization redirects `*.html` assets to
+  their extensionless path, but Google's verifier requires HTTP 200 at the
+  exact `.html` URL. A `_redirects` 200 rewrite now serves the token there.
+  Infrastructure only.
+
 ## 1.9.1 — 2026-08-02
 
 - **Search-engine groundwork (Tier 1)**: real `robots.txt` and single-URL
