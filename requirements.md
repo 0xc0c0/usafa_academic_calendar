@@ -66,8 +66,14 @@ the official 26–27 Schedule of Calls:
 **DF Time** (added 2026-07-30, v1.5.0): the 12:30–13:23 block is schedulable as a
 one-click fixed entry. Per the SoC notes it is the Dean's block for extra
 instruction, academic advising, majors' meetings, and Dean's calls — **T-days
-only** (M-days have CW Time instead, which is not schedulable here). Config carries
-it as `scheduleOfCalls.dfTime` with the official times.
+only**. Config carries it as `scheduleOfCalls.dfTime` with the official times.
+
+**CW Time** (added 2026-08-02, v1.9.0): the Cadet Wing's counterpart block on
+M-days, same official slot, one-click via the Calendar Add-ons section. **No CW
+Time on Modified SoC days** (owner ruling 2026-08-02): the shifted periods 5–6
+occupy the 1230–1330 slot there, so Fall 2026 has 35 CW events and Spring 2027
+has 36. The same guard applies to DF Time for symmetry (a no-op in AY26-27,
+which has no modified T-days). Config carries `scheduleOfCalls.cwTime`.
 
 **Full-hour events** (owner decision 2026-07-30, v1.5.0): generated calendar
 *events* end 60 minutes after their start (period 3 event = 09:30–10:30; merged
@@ -128,7 +134,8 @@ One JSON file per semester in `config/`. Launch files:
       "5": { "start": "12:30", "end": "13:23" },
       "6": { "start": "13:30", "end": "14:23" }
     },
-    "dfTime": { "start": "12:30", "end": "13:23" }  // Dean's block, T-days only
+    "dfTime": { "start": "12:30", "end": "13:23" },  // Dean's block, T-days only
+    "cwTime": { "start": "12:30", "end": "13:23" }   // Cadet Wing block, M-days (never on Modified SoC days)
   },
   "days": [                        // every class day, chronological
     {
@@ -180,10 +187,12 @@ schedule", "Build a class" — never cart/shopping language.*
    - **Per-entry day-label option** (v1.3.0): a checkbox appends each event's own
      class-day label to its title, e.g. "CS210 - M35" on day M35. Off by default;
      the server coerces the untrusted flag to a strict boolean.
-   - **DF Time** (v1.5.0; own section since v1.6.0): a one-click card in the
-     "Add DF Time (optional)" section adds the fixed DF Time entry (every T-day)
-     for the selected semester; nothing to configure, no Edit button, cannot be
-     added twice per semester.
+   - **Calendar Add-ons** (v1.9.0; grew out of the v1.5.0 DF Time card): a
+     section with its own semester picker and four one-click fixed entries —
+     DF Time (T-days), CW Time (M-days, skips Modified SoC days), and All-Day
+     M-Day / T-Day marker events (untimed, titled by day label, shown as
+     Free). Nothing to configure, no Edit button, none can be added twice per
+     semester. The add-ons' semester is independent of the class builder's.
 4. Entries accumulate in a **cart**: add, edit, remove, clear. Multiple entries are
    allowed (a full course load), including entries on both day types and entries
    with multiple periods. Cart persists across page reloads (localStorage).
@@ -214,6 +223,9 @@ schedule", "Build a class" — never cart/shopping language.*
    - `DESCRIPTION`: day label (e.g. "Class day M35"), period list, and a Modified
      SoC note when applicable.
    - `DTSTART`/`DTEND` with `TZID=America/Denver`; file contains a valid `VTIMEZONE`.
+     All-day marker events (v1.9.0) instead use `DTSTART;VALUE=DATE` with an
+     exclusive next-day `DTEND`, plus `TRANSP:TRANSPARENT` and
+     `X-MICROSOFT-CDO-BUSYSTATUS:FREE` so they never block time.
    - `UID`: deterministic (stable hash of semester + date + day label + period set +
      title), so re-importing an identical file updates rather than duplicates.
      Byte-identical meetings from overlapping entries (e.g. an M-days class
@@ -258,12 +270,12 @@ schedule", "Build a class" — never cart/shopping language.*
 3. **Versioning** (v1.6.0): the footer shows the app version, linked to
    `CHANGELOG.md`; every deployed change bumps it.
 4. **Layout** (v1.7.0, refined v1.7.2): on wide screens (≥1100px) the page is
-   two columns — "Build a class" and "Add DF Time (optional)" in the main
-   column; the sticky right rail (e-commerce-cart style) holds "Your schedule"
-   with the bot check and import directions beneath it as subdued support
-   blocks. Narrow screens stack one column in task order: build → DF Time →
-   schedule → bot check → import. Section headings are unnumbered (the 1.6.0
-   step numbers were dropped).
+   two columns — "Build a class" and "Calendar Add-ons" (named "Add DF Time
+   (optional)" before v1.9.0) in the main column; the sticky right rail
+   (e-commerce-cart style) holds "Your schedule" with the bot check and import
+   directions beneath it as subdued support blocks. Narrow screens stack one
+   column in task order: build → add-ons → schedule → bot check → import.
+   Section headings are unnumbered (the 1.6.0 step numbers were dropped).
 
 ## 6. Non-functional requirements
 

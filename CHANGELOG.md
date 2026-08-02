@@ -7,6 +7,25 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.9.0 — 2026-08-02
+
+- **"Add DF Time" grew into a "Calendar Add-ons" section** with four one-click
+  extras and its own semester picker (the add-ons no longer follow the class
+  builder's semester):
+  - **DF Time** — unchanged: every T-day, 1230–1330.
+  - **CW Time** (new) — the Cadet Wing's matching M-day block, 1230–1330,
+    **except Modified SoC days** where the shifted periods 5–6 occupy that
+    slot (35 events in Fall 2026, 36 in Spring 2027). DF Time carries the
+    same guard for symmetry; it changes nothing in AY26-27, which has no
+    modified T-days.
+  - **All-Day M-Day / T-Day Events** (new) — an untimed banner event on each
+    class day, titled by its day label ("M12"), **marked Free** (both
+    `TRANSP:TRANSPARENT` and Outlook's `X-MICROSOFT-CDO-BUSYSTATUS:FREE`) so
+    it never blocks time — a glance at the calendar shows which class day it
+    is. Modified SoC days keep their marker, with a note in the description.
+- Semester configs now carry `scheduleOfCalls.cwTime` (official 1230–1323)
+  as ground truth, schema-validated like `dfTime`.
+
 ## 1.8.0 — 2026-07-31
 
 - **New "Both" option under "Class meets on"**: a class can now meet on every

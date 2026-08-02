@@ -3,7 +3,7 @@ import Turnstile from './components/Turnstile.tsx';
 import UndoImportHelp from './components/UndoImportHelp.tsx';
 import { dayLabel } from './lib/config.ts';
 import { icsFilename } from './lib/ics.ts';
-import { expandEntries, expandEntry, fullHourEnd, genericTitle } from './lib/schedule.ts';
+import { FIXED_ADDONS, expandEntries, expandEntry, fullHourEnd, genericTitle } from './lib/schedule.ts';
 import { SEMESTERS, getSemester } from './lib/semesters.ts';
 import { APP_VERSION, CHANGELOG_URL } from './lib/version.ts';
 import type { EntryDayType, PeriodNumber, ScheduleEntry, SemesterConfig } from './lib/types.ts';
@@ -43,7 +43,11 @@ function loadCart(): ScheduleEntry[] {
             : [],
         };
       })
-      .filter((e) => e.kind === 'dfTime' || (['M', 'T', 'both'].includes(e.dayType) && e.periods.length > 0));
+      .filter((e) =>
+        e.kind !== undefined && e.kind !== 'class'
+          ? typeof e.kind === 'string' && Object.hasOwn(FIXED_ADDONS, e.kind)
+          : ['M', 'T', 'both'].includes(e.dayType) && e.periods.length > 0,
+      );
   } catch {
     return [];
   }
@@ -53,6 +57,24 @@ function describeEntry(config: SemesterConfig, entry: ScheduleEntry): string {
   const meetings = expandEntry(config, entry);
   const days = new Set(meetings.map((m) => m.date)).size;
   return `${days} class days · ${meetings.length} calendar events`;
+}
+
+/** Meta line for fixed add-on entries; null for normal class entries. */
+function addonMeta(config: SemesterConfig, entry: ScheduleEntry): string | null {
+  const soc = config.scheduleOfCalls;
+  const slot = (block: { start: string }) => `${military(block.start)}–${military(fullHourEnd(block.start))}`;
+  switch (entry.kind) {
+    case 'dfTime':
+      return `T-days, ${slot(soc.dfTime)} — ${describeEntry(config, entry)}`;
+    case 'cwTime':
+      return `M-days, ${slot(soc.cwTime)}, skips Modified SoC days — ${describeEntry(config, entry)}`;
+    case 'allDayM':
+      return `M-days, all day · shown as Free — ${describeEntry(config, entry)}`;
+    case 'allDayT':
+      return `T-days, all day · shown as Free — ${describeEntry(config, entry)}`;
+    default:
+      return null;
+  }
 }
 
 interface SemesterGroupProps {
@@ -98,7 +120,7 @@ function SemesterGroup({
               {entry.location.trim() && <span className="muted"> · {entry.location}</span>}
             </div>
             <div className="cart-actions">
-              {entry.kind !== 'dfTime' && (
+              {(entry.kind === undefined || entry.kind === 'class') && (
                 <button type="button" className="link" onClick={() => onEdit(entry)}>
                   Edit
                 </button>
@@ -108,11 +130,8 @@ function SemesterGroup({
               </button>
             </div>
             <div className="cart-meta muted small">
-              {entry.kind === 'dfTime'
-                ? `T-days, ${military(config.scheduleOfCalls.dfTime.start)}–${military(
-                    fullHourEnd(config.scheduleOfCalls.dfTime.start),
-                  )} — ${describeEntry(config, entry)}`
-                : `${entry.dayType === 'both' ? 'M/T' : entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
+              {addonMeta(config, entry) ??
+                `${entry.dayType === 'both' ? 'M/T' : entry.dayType}-days, period${entry.periods.length > 1 ? 's' : ''} ${entry.periods.join(', ')} — ${describeEntry(config, entry)}`}
               {entry.includeDayLabel && ' · class day in titles'}
             </div>
           </li>
@@ -223,23 +242,53 @@ export default function App() {
     setFormNote('Edit cancelled; the class is unchanged.');
   };
 
-  const dfTimeAdded = cart.some((e) => e.kind === 'dfTime' && e.semesterId === semesterId);
+  const [addonSemesterId, setAddonSemesterId] = useState(SEMESTERS[0].id);
+  const addonConfig = getSemester(addonSemesterId)!;
 
-  const addDfTime = () => {
-    if (dfTimeAdded) return;
+  type AddonKind = keyof typeof FIXED_ADDONS;
+  const addonAdded = (kind: AddonKind) =>
+    cart.some((e) => e.kind === kind && e.semesterId === addonSemesterId);
+
+  const addAddon = (kind: AddonKind) => {
+    if (addonAdded(kind)) return;
     setCart((prev) => [
       ...prev,
       {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        semesterId,
-        dayType: 'T' as const,
+        semesterId: addonSemesterId,
+        dayType: FIXED_ADDONS[kind].dayType,
         periods: [],
-        title: 'DF Time',
+        title: FIXED_ADDONS[kind].title,
         location: '',
-        kind: 'dfTime' as const,
+        kind,
       },
     ]);
   };
+
+  const lunchSlot = (block: { start: string }) => `${military(block.start)}–${military(fullHourEnd(block.start))}`;
+
+  const ADDONS: { kind: AddonKind; name: string; desc: string }[] = [
+    {
+      kind: 'dfTime',
+      name: 'DF Time',
+      desc: `The Dean's extra-instruction and advising block between lunch and 5th period — every T-day, ${lunchSlot(addonConfig.scheduleOfCalls.dfTime)}.`,
+    },
+    {
+      kind: 'cwTime',
+      name: 'CW Time',
+      desc: `The Cadet Wing's matching block — every M-day, ${lunchSlot(addonConfig.scheduleOfCalls.cwTime)}, except Modified SoC days (the shifted afternoon classes take that slot).`,
+    },
+    {
+      kind: 'allDayM',
+      name: 'All-Day M-Day Events',
+      desc: 'An all-day banner event on each M-day, titled by its class day (“M12”), so a glance at your calendar tells you which day it is.',
+    },
+    {
+      kind: 'allDayT',
+      name: 'All-Day T-Day Events',
+      desc: 'The same for T-days (“T12”).',
+    },
+  ];
 
   const removeEntry = (id: string) => {
     setCart((prev) => prev.filter((e) => e.id !== id));
@@ -417,19 +466,40 @@ export default function App() {
         </p>
       </section>
 
-      <section className="card" aria-label="Add DF Time (optional)">
-        <h2>Add DF Time (optional)</h2>
-        <div className="df-card">
-          <div className="muted small">
-            The Dean's extra-instruction and advising block between lunch and 5th period — every T-day,{' '}
-            {military(formConfig.scheduleOfCalls.dfTime.start)}–
-            {military(fullHourEnd(formConfig.scheduleOfCalls.dfTime.start))}. Nothing to configure; one click adds
-            all of them.
-          </div>
-          <button type="button" className="primary" onClick={addDfTime} disabled={dfTimeAdded}>
-            {dfTimeAdded ? `Added to ${formConfig.name}` : `Add DF Time (${formConfig.name})`}
-          </button>
+      <section className="card" aria-label="Calendar Add-ons">
+        <h2>Calendar Add-ons</h2>
+        <p className="muted small">
+          Optional one-click extras, separate from your classes. Nothing to configure — just pick which
+          semester they apply to.
+        </p>
+        <div className="field-row">
+          <label>
+            Add to semester
+            <select value={addonSemesterId} onChange={(e) => setAddonSemesterId(e.target.value)}>
+              {SEMESTERS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.academicYear})
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
+        <ul className="addon-list">
+          {ADDONS.map(({ kind, name, desc }) => (
+            <li key={kind} className="addon-row">
+              <div className="muted small">
+                <strong className="addon-name">{name}</strong> — {desc}
+              </div>
+              <button type="button" className="primary" onClick={() => addAddon(kind)} disabled={addonAdded(kind)}>
+                {addonAdded(kind) ? `${name} added to ${addonConfig.name}` : `Add ${name} (${addonConfig.name})`}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="muted small">
+          The all-day M- and T-day events sit in the calendar's banner strip and are marked{' '}
+          <strong>Free</strong> — they never block time on your day.
+        </p>
       </section>
 
         </div>
@@ -440,7 +510,8 @@ export default function App() {
         {groups.length === 0 ? (
           <div className="card">
             <p className="muted">
-              Nothing here yet — add a class from the builder and it will appear here, grouped by semester.
+              Nothing here yet — add a class from the builder, or a Calendar Add-on, and it will appear here,
+              grouped by semester.
             </p>
           </div>
         ) : (

@@ -1,5 +1,6 @@
 import { dayLabel } from './config.ts';
 import type {
+  DayType,
   Meeting,
   PeriodNumber,
   PeriodTime,
@@ -71,25 +72,65 @@ export function genericTitle(entry: Pick<ScheduleEntry, 'dayType' | 'periods'>):
   return `Class — ${kind} Period${plural} ${list}`;
 }
 
-/** Expand the fixed DF Time block: every T-day, between lunch and 5th period. */
-function expandDfTime(config: SemesterConfig): Meeting[] {
-  const df = config.scheduleOfCalls.dfTime;
+/**
+ * Expand a fixed lunch-block add-on: DF Time (T-days) or CW Time (M-days),
+ * both in the official 1230-1323 slot. Skips Modified SoC days — the shifted
+ * periods 5-6 occupy this slot there (in AY26-27 all modified days are
+ * M-days, so this only bites CW Time in practice; the guard applies to both
+ * for the hypothetical modified T-day).
+ */
+function expandLunchBlock(config: SemesterConfig, kind: 'dfTime' | 'cwTime'): Meeting[] {
+  const block = config.scheduleOfCalls[kind];
+  const wantType = kind === 'dfTime' ? 'T' : 'M';
+  const title = kind === 'dfTime' ? 'DF Time' : 'CW Time';
   const meetings: Meeting[] = [];
   for (const day of config.days) {
-    if (day.dayType !== 'T') continue;
+    if (day.dayType !== wantType || day.modifiedSoC) continue;
     const label = dayLabel(day);
     meetings.push({
       date: day.date,
       dayLabel: label,
       periods: [],
-      start: df.start,
-      end: fullHourEnd(df.start),
+      start: block.start,
+      end: fullHourEnd(block.start),
       modifiedSoC: day.modifiedSoC,
-      title: 'DF Time',
+      title,
       location: '',
       description:
-        `DF Time on class day ${label} (${config.name}) — extra instruction, academic advising, ` +
-        `majors' meetings, and Dean's calls.` +
+        (kind === 'dfTime'
+          ? `DF Time on class day ${label} (${config.name}) — extra instruction, academic advising, ` +
+            `majors' meetings, and Dean's calls.`
+          : `CW Time on class day ${label} (${config.name}) — the Cadet Wing's block between lunch ` +
+            `and 5th period. No CW Time on Modified SoC days.`) +
+        (day.note ? `\nCalendar note: ${day.note}` : ''),
+    });
+  }
+  return meetings;
+}
+
+/**
+ * Expand the all-day class-day markers: one untimed, Free (non-blocking)
+ * all-day event per class day of the given type, titled by the day's label
+ * (e.g. "M12") so the calendar's banner strip shows which class day it is.
+ */
+function expandAllDay(config: SemesterConfig, wantType: DayType): Meeting[] {
+  const meetings: Meeting[] = [];
+  for (const day of config.days) {
+    if (day.dayType !== wantType) continue;
+    const label = dayLabel(day);
+    meetings.push({
+      date: day.date,
+      dayLabel: label,
+      periods: [],
+      start: '',
+      end: '',
+      allDay: true,
+      modifiedSoC: day.modifiedSoC,
+      title: label,
+      location: '',
+      description:
+        `Class day ${label} (${config.name}).` +
+        (day.modifiedSoC ? ' Modified SoC — afternoon sections start one hour early.' : '') +
         (day.note ? `\nCalendar note: ${day.note}` : ''),
     });
   }
@@ -99,7 +140,9 @@ function expandDfTime(config: SemesterConfig): Meeting[] {
 /** Expand one cart entry into concrete meetings (one per class day of its
  * type; dayType 'both' matches every class day). */
 export function expandEntry(config: SemesterConfig, entry: ScheduleEntry): Meeting[] {
-  if (entry.kind === 'dfTime') return expandDfTime(config);
+  if (entry.kind === 'dfTime' || entry.kind === 'cwTime') return expandLunchBlock(config, entry.kind);
+  if (entry.kind === 'allDayM') return expandAllDay(config, 'M');
+  if (entry.kind === 'allDayT') return expandAllDay(config, 'T');
   const title = entry.title.trim() || genericTitle(entry);
   // All six periods = the whole class day: one continuous event spanning
   // lunch and CW/DF Time (owner decision 2026-07-31), instead of the merge
@@ -151,6 +194,17 @@ export function expandEntries(config: SemesterConfig, entries: ScheduleEntry[]):
   });
 }
 
+/** Canonical shape of each fixed one-click add-on (see expandEntry). */
+export const FIXED_ADDONS: Record<
+  Exclude<NonNullable<ScheduleEntry['kind']>, 'class'>,
+  { dayType: DayType; title: string }
+> = {
+  dfTime: { dayType: 'T', title: 'DF Time' },
+  cwTime: { dayType: 'M', title: 'CW Time' },
+  allDayM: { dayType: 'M', title: 'All-Day M-Day Events' },
+  allDayT: { dayType: 'T', title: 'All-Day T-Day Events' },
+};
+
 /**
  * Validate an untrusted cart payload against a semester config. Returns a
  * cleaned list or throws with a client-safe message. Used by the API; the UI
@@ -161,19 +215,27 @@ export function validateEntries(config: SemesterConfig, raw: unknown): ScheduleE
   if (raw.length > MAX_ENTRIES) throw new Error(`Too many entries (max ${MAX_ENTRIES}).`);
   return raw.map((item, i) => {
     const e = item as Partial<ScheduleEntry>;
-    if (e.kind === 'dfTime') {
-      // Fixed block: nothing user-configurable, so ignore all other fields.
+    // Object.hasOwn on a string only: 'constructor' etc. are reachable through
+    // the prototype chain, and non-string kinds (e.g. ["dfTime"]) would coerce
+    // to a matching key via ToPropertyKey — both must fail as unknown kinds.
+    const fixed =
+      typeof e.kind === 'string' && e.kind !== 'class' && Object.hasOwn(FIXED_ADDONS, e.kind)
+        ? FIXED_ADDONS[e.kind]
+        : undefined;
+    if (fixed && e.kind && e.kind !== 'class') {
+      // Fixed add-on: nothing user-configurable, so ignore all other fields.
       return {
         id: typeof e.id === 'string' ? e.id.slice(0, 40) : `entry-${i + 1}`,
         semesterId: config.id,
-        dayType: 'T' as const,
+        dayType: fixed.dayType,
         periods: [],
-        title: 'DF Time',
+        title: fixed.title,
         location: '',
         includeDayLabel: false,
-        kind: 'dfTime' as const,
+        kind: e.kind,
       };
     }
+    if (e.kind && e.kind !== 'class') throw new Error(`Entry ${i + 1}: unknown entry kind.`);
     if (e.dayType !== 'M' && e.dayType !== 'T' && e.dayType !== 'both') {
       throw new Error(`Entry ${i + 1}: day type must be M, T, or both.`);
     }

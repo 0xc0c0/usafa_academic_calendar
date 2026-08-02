@@ -52,6 +52,8 @@ export function validateSemesterConfig(raw: unknown): SemesterConfig {
   }
   if (!soc.dfTime) fail(id, 'missing scheduleOfCalls.dfTime');
   checkPeriodTime(id, 'dfTime', soc.dfTime);
+  if (!soc.cwTime) fail(id, 'missing scheduleOfCalls.cwTime');
+  checkPeriodTime(id, 'cwTime', soc.cwTime);
 
   if (!Array.isArray(cfg.days) || cfg.days.length === 0) fail(id, 'days must be a non-empty array');
   const nextIndex: Record<string, number> = { M: 1, T: 1 };

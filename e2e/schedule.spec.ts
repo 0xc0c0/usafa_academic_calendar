@@ -93,7 +93,7 @@ test('full user journey: multi-entry cart → captcha → download → the .ics 
 });
 
 test('spring semester carts download separately with correct dates', async ({ page }) => {
-  await page.getByLabel('Semester').selectOption('spring-2027');
+  await page.getByRole('combobox', { name: 'Semester', exact: true }).selectOption('spring-2027');
   await addEntry(page, { dayType: 'M', periods: [2], title: 'History 202' });
 
   const downloadButton = page.getByRole('button', { name: /Download usafa-spring-2027\.ics/ });
@@ -137,7 +137,7 @@ test('editing is non-destructive: entries survive reloads and switching edits', 
 
 test('two-semester carts download sequentially without reusing a captcha token', async ({ page }) => {
   await addEntry(page, { dayType: 'M', periods: [3], title: 'Fall Course' });
-  await page.getByLabel('Semester').selectOption('spring-2027');
+  await page.getByRole('combobox', { name: 'Semester', exact: true }).selectOption('spring-2027');
   await addEntry(page, { dayType: 'T', periods: [2], title: 'Spring Course' });
 
   const fallButton = page.getByRole('button', { name: /Download usafa-fall-2026\.ics/ });
@@ -202,7 +202,7 @@ test('DF Time: one click adds every T-day 1230-1330, downloads correctly, cannot
   await expect(page.getByLabel('Fall 2026 schedule').getByText('DF Time', { exact: true })).toBeVisible();
   await expect(page.getByText(/T-days, 1230–1330 — 41 class days · 41 calendar events/)).toBeVisible();
   // The button flips to a disabled "already added" state; no duplicates possible.
-  await expect(page.getByRole('button', { name: /Added to Fall 2026/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /DF Time added to Fall 2026/ })).toBeDisabled();
   // Nothing to configure, so DF Time entries have Remove but no Edit.
   const dfItem = page.getByRole('listitem').filter({ hasText: 'DF Time' });
   await expect(dfItem.getByRole('button', { name: 'Remove' })).toBeVisible();
@@ -253,4 +253,42 @@ test('Both + all six periods: one continuous block on every class day', async ({
   const m4 = events.find((e) => e.start.toISOString().startsWith('2026-08-14'))!;
   expect(m4.start.toISOString()).toBe('2026-08-14T13:30:00.000Z');
   expect(m4.end.toISOString()).toBe('2026-08-14T20:30:00.000Z');
+});
+
+test('Calendar Add-ons: CW Time skips Modified SoC days, all-day markers import as Free banner events', async ({
+  page,
+}) => {
+  // The add-ons block is scoped by its own semester select, not the builder's.
+  await page.getByRole('button', { name: /Add CW Time \(Fall 2026\)/ }).click();
+  await page.getByRole('button', { name: /Add All-Day M-Day Events \(Fall 2026\)/ }).click();
+  await expect(page.getByText(/M-days, 1230–1330, skips Modified SoC days — 35 class days · 35 calendar events/)).toBeVisible();
+  await expect(page.getByText(/M-days, all day · shown as Free — 41 class days · 41 calendar events/)).toBeVisible();
+
+  // Switching the add-on semester re-arms the buttons for the other semester.
+  await page.getByLabel('Add to semester').selectOption('spring-2027');
+  await expect(page.getByRole('button', { name: /Add CW Time \(Spring 2027\)/ })).toBeEnabled();
+  await page.getByLabel('Add to semester').selectOption('fall-2026');
+  // Added-state labels carry the add-on name, so each is uniquely addressable.
+  await expect(page.getByRole('button', { name: 'CW Time added to Fall 2026' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'All-Day M-Day Events added to Fall 2026' })).toBeDisabled();
+
+  const downloadButton = page.getByRole('button', { name: /Download usafa-fall-2026\.ics/ });
+  await expect(downloadButton).toBeEnabled({ timeout: 30_000 });
+  const downloadPromise = page.waitForEvent('download');
+  await downloadButton.click();
+  const events = await parseDownload(await downloadPromise);
+
+  expect(events).toHaveLength(76); // 35 CW + 41 all-day markers
+
+  const cw = events.filter((e) => e.summary === 'CW Time');
+  expect(cw).toHaveLength(35);
+  // No CW Time on any Modified SoC day (M4 = 2026-08-14 spot check).
+  expect(cw.some((e) => e.start.toISOString().startsWith('2026-08-14'))).toBe(false);
+  const cwM1 = cw.find((e) => e.start.toISOString().startsWith('2026-08-06'))!;
+  expect(cwM1.start.toISOString()).toBe('2026-08-06T18:30:00.000Z'); // 1230 MDT
+
+  const allDay = events.filter((e) => (e.start as unknown as { dateOnly?: boolean }).dateOnly === true);
+  expect(allDay).toHaveLength(41);
+  expect(allDay.map((e) => e.summary)).toContain('M1');
+  expect(allDay.map((e) => e.summary)).toContain('M41');
 });

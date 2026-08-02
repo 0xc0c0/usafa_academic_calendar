@@ -202,3 +202,44 @@ describe('UID uniqueness with overlapping entries (v1.8.0)', () => {
     expect(new Set(uids).size).toBe(82);
   });
 });
+
+describe('all-day marker serialization (v1.9.0)', () => {
+  const fall2 = getSemester('fall-2026')!;
+  const allDayEntry: ScheduleEntry = {
+    id: 'ad',
+    semesterId: 'fall-2026',
+    dayType: 'M',
+    periods: [],
+    title: 'All-Day M-Day Events',
+    location: '',
+    kind: 'allDayM',
+  };
+
+  it('emits date-only DTSTART/DTEND, TRANSP:TRANSPARENT, and Outlook FREE', () => {
+    const ics = buildIcs(fall2, expandEntries(fall2, [allDayEntry]), new Date('2026-08-02T12:00:00Z'));
+    expect(ics.match(/DTSTART;VALUE=DATE:/g)).toHaveLength(41);
+    expect(ics.match(/TRANSP:TRANSPARENT/g)).toHaveLength(41);
+    expect(ics.match(/X-MICROSOFT-CDO-BUSYSTATUS:FREE/g)).toHaveLength(41);
+    // M1 is 2026-08-06: exclusive DTEND is the next calendar day.
+    expect(ics).toContain('DTSTART;VALUE=DATE:20260806');
+    expect(ics).toContain('DTEND;VALUE=DATE:20260807');
+    // Month boundary: M17 is 2026-09-24? — assert generically instead:
+    // every DTEND is one day after its DTSTART.
+    const events = ics.split('BEGIN:VEVENT').slice(1);
+    for (const ev of events) {
+      const s = ev.match(/DTSTART;VALUE=DATE:(\d{8})/)![1];
+      const e = ev.match(/DTEND;VALUE=DATE:(\d{8})/)![1];
+      const sd = new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}T00:00:00Z`);
+      sd.setUTCDate(sd.getUTCDate() + 1);
+      expect(e).toBe(sd.toISOString().slice(0, 10).replace(/-/g, ''));
+    }
+  });
+
+  it('parses via node-ical as date-only events titled by day label', () => {
+    const ics = buildIcs(fall2, expandEntries(fall2, [allDayEntry]), new Date('2026-08-02T12:00:00Z'));
+    const events = Object.values(ical.sync.parseICS(ics)).filter((c) => c.type === 'VEVENT');
+    expect(events).toHaveLength(41);
+    expect(events.map((e) => e.summary)).toContain('M1');
+    expect(events.every((e) => (e.start as { dateOnly?: boolean }).dateOnly === true)).toBe(true);
+  });
+});

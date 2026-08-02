@@ -82,6 +82,14 @@ function localStamp(date: string, hhmm: string): string {
   return `${date.replace(/-/g, '')}T${hhmm.replace(':', '')}00`;
 }
 
+/** Day after an ISO local date, as YYYYMMDD — DTEND for all-day events is the
+ * exclusive next day per RFC 5545. UTC math avoids DST edge cases. */
+function nextDateStamp(date: string): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
 function utcStamp(now: Date): string {
   return now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
@@ -103,14 +111,23 @@ export function buildIcs(config: SemesterConfig, meetings: Meeting[], now: Date 
   ];
   const dtstamp = utcStamp(now);
   for (const m of meetings) {
-    lines.push(
-      'BEGIN:VEVENT',
-      `UID:${meetingUid(config.id, m)}`,
-      `DTSTAMP:${dtstamp}`,
-      `DTSTART;TZID=${TZID}:${localStamp(m.date, m.start)}`,
-      `DTEND;TZID=${TZID}:${localStamp(m.date, m.end)}`,
-      `SUMMARY:${escapeText(m.title)}`,
-    );
+    lines.push('BEGIN:VEVENT', `UID:${meetingUid(config.id, m)}`, `DTSTAMP:${dtstamp}`);
+    if (m.allDay) {
+      // Date-only banner event, marked Free so it never blocks the time grid
+      // (TRANSP per RFC 5545; the X- property is what Outlook actually reads).
+      lines.push(
+        `DTSTART;VALUE=DATE:${m.date.replace(/-/g, '')}`,
+        `DTEND;VALUE=DATE:${nextDateStamp(m.date)}`,
+        'TRANSP:TRANSPARENT',
+        'X-MICROSOFT-CDO-BUSYSTATUS:FREE',
+      );
+    } else {
+      lines.push(
+        `DTSTART;TZID=${TZID}:${localStamp(m.date, m.start)}`,
+        `DTEND;TZID=${TZID}:${localStamp(m.date, m.end)}`,
+      );
+    }
+    lines.push(`SUMMARY:${escapeText(m.title)}`);
     if (m.location) lines.push(`LOCATION:${escapeText(m.location)}`);
     lines.push(`DESCRIPTION:${escapeText(m.description)}`, 'END:VEVENT');
   }

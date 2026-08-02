@@ -39,6 +39,10 @@ export interface SemesterConfig {
     /** DF Time: the Dean's extra-instruction/advising block between lunch and
      * 5th period. Official SoC times (1230-1323); occurs on T-days only. */
     dfTime: PeriodTime;
+    /** CW Time: the Cadet Wing's counterpart block on M-days, same official
+     * SoC slot (1230-1323). Does not occur on Modified SoC days — the
+     * shifted periods 5-6 occupy this slot there. */
+    cwTime: PeriodTime;
   };
   days: SemesterDay[];
 }
@@ -56,9 +60,11 @@ export interface ScheduleEntry {
   /** Append the class-day label to each event title, e.g. "CS210 - M35".
    * Optional so entries saved before this option existed still load. */
   includeDayLabel?: boolean;
-  /** 'dfTime' marks the fixed DF Time block (every T-day, no configuration);
-   * absent or 'class' is a normal course entry. */
-  kind?: 'class' | 'dfTime';
+  /** Fixed one-click add-ons (no configuration): 'dfTime' = DF Time block
+   * (T-days), 'cwTime' = CW Time block (M-days, skips Modified SoC days),
+   * 'allDayM'/'allDayT' = untimed all-day marker events titled by class-day
+   * label, marked Free. Absent or 'class' is a normal course entry. */
+  kind?: 'class' | 'dfTime' | 'cwTime' | 'allDayM' | 'allDayT';
 }
 
 /** A single concrete class meeting (one standalone VEVENT). */
@@ -69,6 +75,9 @@ export interface Meeting {
   periods: PeriodNumber[];
   start: string;
   end: string;
+  /** Untimed date-only event (DTSTART;VALUE=DATE) marked Free — start/end are
+   * empty strings. Used by the all-day class-day markers. */
+  allDay?: boolean;
   modifiedSoC: boolean;
   title: string;
   location: string;

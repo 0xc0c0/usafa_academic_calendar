@@ -107,6 +107,8 @@ describe('published semester configs', () => {
       });
       // DF Time: the 1230-1323 block between lunch and 5th period (T-days).
       expect(cfg.scheduleOfCalls.dfTime).toEqual({ start: '12:30', end: '13:23' });
+      // CW Time: the Cadet Wing's counterpart in the same slot (M-days).
+      expect(cfg.scheduleOfCalls.cwTime).toEqual({ start: '12:30', end: '13:23' });
     }
   });
 });

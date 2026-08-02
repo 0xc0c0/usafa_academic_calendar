@@ -299,3 +299,59 @@ describe('overlapping-entry dedupe (v1.8.0)', () => {
     expect(meetings).toHaveLength(123);
   });
 });
+
+describe('Calendar Add-ons (v1.9.0)', () => {
+  it('CW Time expands to every M-day EXCEPT Modified SoC days (35 in Fall 2026)', () => {
+    const meetings = expandEntry(fall, entry({ kind: 'cwTime', dayType: 'M', periods: [] }));
+    expect(meetings).toHaveLength(35); // 41 M-days - 6 modified
+    const dates = new Set(meetings.map((m) => m.date));
+    for (const modified of ['2026-08-14', '2026-08-28', '2026-09-10', '2026-09-17', '2026-10-02', '2026-11-13']) {
+      expect(dates.has(modified)).toBe(false);
+    }
+    expect(meetings.every((m) => m.title === 'CW Time' && m.start === '12:30' && m.end === '13:30')).toBe(true);
+    expect(meetings.every((m) => m.dayLabel.startsWith('M'))).toBe(true);
+  });
+
+  it('CW Time in Spring 2027 skips its 5 modified days (36 events)', () => {
+    const spring = getSemester('spring-2027')!;
+    expect(expandEntry(spring, entry({ kind: 'cwTime', semesterId: 'spring-2027', periods: [] }))).toHaveLength(36);
+  });
+
+  it('DF Time still hits all 41 T-days (no modified T-days exist in AY26-27)', () => {
+    expect(expandEntry(fall, entry({ kind: 'dfTime', dayType: 'T', periods: [] }))).toHaveLength(41);
+  });
+
+  it('all-day markers cover every class day of their type, untimed, titled by label', () => {
+    const m = expandEntry(fall, entry({ kind: 'allDayM', dayType: 'M', periods: [] }));
+    const t = expandEntry(fall, entry({ kind: 'allDayT', dayType: 'T', periods: [] }));
+    expect(m).toHaveLength(41);
+    expect(t).toHaveLength(41);
+    expect(m.every((x) => x.allDay === true && x.start === '' && x.end === '')).toBe(true);
+    expect(m.map((x) => x.title)).toContain('M35');
+    expect(t.map((x) => x.title)).toContain('T41');
+    // Modified SoC days still get their marker (with a note), unlike CW Time.
+    const m4 = m.find((x) => x.date === '2026-08-14')!;
+    expect(m4.title).toBe('M4');
+    expect(m4.description).toContain('Modified SoC');
+  });
+
+  it('validateEntries normalizes add-on kinds and rejects unknown kinds', () => {
+    const cleaned = validateEntries(fall, [
+      { kind: 'cwTime', title: 'HACKED', periods: [1] },
+      { kind: 'allDayM' },
+      { kind: 'allDayT' },
+    ]);
+    expect(cleaned[0]).toMatchObject({ kind: 'cwTime', dayType: 'M', title: 'CW Time', periods: [] });
+    expect(cleaned[1]).toMatchObject({ kind: 'allDayM', dayType: 'M', title: 'All-Day M-Day Events' });
+    expect(cleaned[2]).toMatchObject({ kind: 'allDayT', dayType: 'T', title: 'All-Day T-Day Events' });
+    expect(() => validateEntries(fall, [{ kind: 'evil', periods: [1], dayType: 'M' }])).toThrow(/unknown entry kind/);
+  });
+
+  it('rejects prototype-chain and non-string kinds as unknown', () => {
+    // Arrays/objects would coerce to matching keys via ToPropertyKey;
+    // prototype-chain names would pass an `in` check. All must 400.
+    for (const kind of ['constructor', '__proto__', 'toString', ['dfTime'], 42, {}]) {
+      expect(() => validateEntries(fall, [{ kind, periods: [1], dayType: 'M' }])).toThrow(/unknown entry kind/);
+    }
+  });
+});
