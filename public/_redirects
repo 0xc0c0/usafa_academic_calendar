@@ -1,0 +1,3 @@
+# Consolidate the pages.dev mirror onto the canonical custom domain so
+# search engines see one URL (Cloudflare Pages host-based redirect).
+https://usafa-academic-calendar.pages.dev/* https://usafa-calendar.benslab.dev/:splat 301

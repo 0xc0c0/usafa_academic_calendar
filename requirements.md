@@ -344,6 +344,12 @@ schedule", "Build a class" — never cart/shopping language.*
   (`cfat_` prefix; verify via `/accounts/{id}/tokens/verify`): `api_token_2` =
   Pages + Turnstile Edit, `api_token` = Zone DNS Edit + cache purge. **Both expire
   2026-08-29** — rotate before then.
+- **Search-engine setup (v1.9.1):** `public/` ships `robots.txt`, a single-URL
+  `sitemap.xml`, the owner's Google Search Console HTML verification file, a
+  host-based 301 (`_redirects`) sending the `*.pages.dev` mirror to the custom
+  domain, and an `X-Robots-Tag: noindex` `_headers` fallback for the mirror;
+  `index.html` carries `rel=canonical`. Preview deployments are auto-noindexed
+  by Cloudflare.
 - **Not set up:** GitHub push-to-deploy (requires one-time dashboard OAuth);
   redeploys run the script instead.
 

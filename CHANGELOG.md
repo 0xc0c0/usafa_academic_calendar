@@ -7,6 +7,16 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.9.1 — 2026-08-02
+
+- **Search-engine groundwork (Tier 1)**: real `robots.txt` and single-URL
+  `sitemap.xml` (both previously returned the SPA HTML fallback with a
+  misleading 200), `rel=canonical` on the custom domain, a host-based 301
+  in `_redirects` consolidating the `usafa-academic-calendar.pages.dev`
+  mirror onto usafa-calendar.benslab.dev (with an `X-Robots-Tag: noindex`
+  `_headers` fallback), and the owner's Google Search Console HTML
+  verification file. Infrastructure only; no user-facing change.
+
 ## 1.9.0 — 2026-08-02
 
 - **"Add DF Time" grew into a "Calendar Add-ons" section** with four one-click

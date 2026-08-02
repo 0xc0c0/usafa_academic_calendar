@@ -1,0 +1,5 @@
+# Belt-and-braces: if the host-based redirect above ever fails to match,
+# keep the pages.dev mirror out of search indexes. Preview deployments are
+# already noindexed by Cloudflare automatically.
+https://usafa-academic-calendar.pages.dev/*
+  X-Robots-Tag: noindex
