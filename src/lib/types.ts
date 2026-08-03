@@ -78,6 +78,10 @@ export interface Meeting {
   /** Untimed date-only event (DTSTART;VALUE=DATE) marked Free — start/end are
    * empty strings. Used by the all-day class-day markers. */
   allDay?: boolean;
+  /** Marked Free (TRANSP:TRANSPARENT + Outlook FREE) so booking tools like
+   * Microsoft Bookings don't treat the slot as busy. All add-on events —
+   * all-day markers, DF Time, CW Time — are Free; class meetings are Busy. */
+  free?: boolean;
   modifiedSoC: boolean;
   title: string;
   location: string;

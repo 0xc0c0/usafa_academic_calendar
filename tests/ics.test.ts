@@ -243,3 +243,20 @@ describe('all-day marker serialization (v1.9.0)', () => {
     expect(events.every((e) => (e.start as { dateOnly?: boolean }).dateOnly === true)).toBe(true);
   });
 });
+
+describe('add-on events marked Free (v1.10.0)', () => {
+  it('DF/CW lunch blocks carry TRANSP:TRANSPARENT + Outlook FREE; classes stay opaque', () => {
+    const cfg = getSemester('fall-2026')!;
+    const entries: ScheduleEntry[] = [
+      { id: 'df', semesterId: 'fall-2026', dayType: 'T', periods: [], title: 'DF Time', location: '', kind: 'dfTime' },
+      { id: 'cw', semesterId: 'fall-2026', dayType: 'M', periods: [], title: 'CW Time', location: '', kind: 'cwTime' },
+      { id: 'c', semesterId: 'fall-2026', dayType: 'M', periods: [3], title: 'CS110', location: '' },
+    ];
+    const ics = buildIcs(cfg, expandEntries(cfg, entries), new Date('2026-08-02T12:00:00Z'));
+    // 41 DF + 35 CW are Free; the 41 class events carry no TRANSP at all.
+    expect(ics.match(/TRANSP:TRANSPARENT/g)).toHaveLength(76);
+    expect(ics.match(/X-MICROSOFT-CDO-BUSYSTATUS:FREE/g)).toHaveLength(76);
+    // Free blocks remain timed events (not all-day banners).
+    expect(ics.match(/DTSTART;VALUE=DATE:/g)).toBeNull();
+  });
+});

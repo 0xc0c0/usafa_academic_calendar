@@ -94,6 +94,7 @@ function expandLunchBlock(config: SemesterConfig, kind: 'dfTime' | 'cwTime'): Me
       start: block.start,
       end: fullHourEnd(block.start),
       modifiedSoC: day.modifiedSoC,
+      free: true,
       title,
       location: '',
       description:
@@ -125,6 +126,7 @@ function expandAllDay(config: SemesterConfig, wantType: DayType): Meeting[] {
       start: '',
       end: '',
       allDay: true,
+      free: true,
       modifiedSoC: day.modifiedSoC,
       title: label,
       location: '',

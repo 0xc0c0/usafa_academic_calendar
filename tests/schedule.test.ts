@@ -355,3 +355,12 @@ describe('Calendar Add-ons (v1.9.0)', () => {
     }
   });
 });
+
+describe('add-on Free flag (v1.10.0)', () => {
+  it('marks DF, CW, and all-day markers free; class meetings stay busy', () => {
+    expect(expandEntry(fall, entry({ kind: 'dfTime', dayType: 'T', periods: [] })).every((m) => m.free)).toBe(true);
+    expect(expandEntry(fall, entry({ kind: 'cwTime', periods: [] })).every((m) => m.free)).toBe(true);
+    expect(expandEntry(fall, entry({ kind: 'allDayM', periods: [] })).every((m) => m.free)).toBe(true);
+    expect(expandEntry(fall, entry({ periods: [3] })).some((m) => m.free)).toBe(false);
+  });
+});

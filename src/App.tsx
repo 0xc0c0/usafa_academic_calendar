@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Turnstile from './components/Turnstile.tsx';
 import UndoImportHelp from './components/UndoImportHelp.tsx';
 import { dayLabel } from './lib/config.ts';
@@ -10,6 +10,48 @@ import type { EntryDayType, PeriodNumber, ScheduleEntry, SemesterConfig } from '
 import { MAX_LOCATION_LENGTH, MAX_TITLE_LENGTH } from './lib/types.ts';
 
 const SITE_KEY: string = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+
+/** FAQ content — rendered visibly AND emitted as FAQPage JSON-LD, from the
+ * same strings so the structured data always matches the page (a Google
+ * requirement). Keep answers plain text. */
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: 'What are M-days and T-days at USAFA?',
+    a: 'The Air Force Academy does not schedule classes by weekday. It alternates two class-day types — M-days and T-days (an A/B-day system) — and a course meets on every M-day or every T-day at one or more numbered periods. Holidays, training days, and breaks interrupt the alternation, so the sequence is irregular: in AY 2026-2027 each semester has exactly 41 M-days (M1–M41) and 41 T-days (T1–T41), mapped in the official Cadet Academic Calendar.',
+  },
+  {
+    q: 'What are the USAFA class period times?',
+    a: 'The regular Schedule of Calls is the same Monday through Friday: period 1 starts at 0730, period 2 at 0830, period 3 at 0930, period 4 at 1030, period 5 at 1330, and period 6 at 1430, each dismissing at 23 minutes past the following hour. Lunch and the CW/DF Time block sit between periods 4 and 5. This builder shows the official times and generates full-hour calendar events, so a 0930 class becomes a 0930–1030 event.',
+  },
+  {
+    q: 'What is a Modified Schedule of Calls day?',
+    a: 'Some class days are marked "Modified SoC — Afternoon Sections Start 1 Hr Early" on the academic calendar. On those days periods 5 and 6 start an hour earlier, at 1230 and 1330; morning periods are unchanged. This schedule generator applies the shift automatically — Fall 2026 has six Modified SoC days and Spring 2027 has five, all M-days.',
+  },
+  {
+    q: 'How do I add my USAFA class schedule to Google Calendar, Outlook, or Apple Calendar?',
+    a: 'Build your schedule above and download the .ics file, then import it: Google Calendar via Settings, then "Import & export"; Outlook for Windows via File, Open & Export, Import/Export (choose Import, not "Open as New"); Apple Calendar by double-clicking the file. Every class meeting is a standalone event with no recurrence rule, so you can move or delete a single meeting without affecting the rest of the semester.',
+  },
+  {
+    q: 'What are DF Time and CW Time?',
+    a: "The 1230–1323 block between lunch and 5th period: on T-days it is DF Time, the Dean's block for extra instruction, academic advising, majors' meetings, and Dean's calls; on M-days it is CW Time, the Cadet Wing's counterpart. Both are one-click Calendar Add-ons here, and like the all-day markers they import marked Free — visible on your calendar but never blocking time, so booking tools like Microsoft Bookings keep those slots open. CW Time never falls on Modified SoC days, because the shifted afternoon periods occupy that slot.",
+  },
+  {
+    q: 'Is this an official USAFA site?',
+    a: 'No — this is a free, unofficial tool. It is built from the published AY 2026-2027 Cadet Academic Calendar and Schedule of Calls, but always verify against the official USAFA academic calendar. No schedule data is stored server-side.',
+  },
+];
+
+const FAQ_JSON_LD = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+  // Standard JSON-in-<script> guard: a future FAQ edit containing "</script"
+  // or "<!--" must not terminate the raw-text script element mid-JSON.
+}).replace(/</g, '\\u003c');
 const CART_STORAGE_KEY = 'usafa-cal-cart-v1';
 const ALL_PERIODS: PeriodNumber[] = [1, 2, 3, 4, 5, 6];
 
@@ -65,9 +107,9 @@ function addonMeta(config: SemesterConfig, entry: ScheduleEntry): string | null 
   const slot = (block: { start: string }) => `${military(block.start)}–${military(fullHourEnd(block.start))}`;
   switch (entry.kind) {
     case 'dfTime':
-      return `T-days, ${slot(soc.dfTime)} — ${describeEntry(config, entry)}`;
+      return `T-days, ${slot(soc.dfTime)} · shown as Free — ${describeEntry(config, entry)}`;
     case 'cwTime':
-      return `M-days, ${slot(soc.cwTime)}, skips Modified SoC days — ${describeEntry(config, entry)}`;
+      return `M-days, ${slot(soc.cwTime)}, skips Modified SoC days · shown as Free — ${describeEntry(config, entry)}`;
     case 'allDayM':
       return `M-days, all day · shown as Free — ${describeEntry(config, entry)}`;
     case 'allDayT':
@@ -167,7 +209,11 @@ export default function App() {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [includeDayLabel, setIncludeDayLabel] = useState(false);
-  const [cart, setCart] = useState<ScheduleEntry[]>(loadCart);
+  // Two-pass cart load: the first render must match the prerendered
+  // (empty-cart) HTML for clean hydration, so localStorage is read in an
+  // effect right after mount instead of during the initial render.
+  const [cart, setCart] = useState<ScheduleEntry[]>([]);
+  const [cartLoaded, setCartLoaded] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
@@ -176,9 +222,26 @@ export default function App() {
   const [formNote, setFormNote] = useState('');
   const [undoHelpOpen, setUndoHelpOpen] = useState(false);
 
+  const skipNextSave = useRef(false);
+
   useEffect(() => {
+    skipNextSave.current = true;
+    setCart(loadCart());
+    setCartLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    // Persist USER changes only. Never write before the load effect has run
+    // (the initial empty render must not clobber a saved schedule), and skip
+    // the one run triggered by the load itself — writing back what was just
+    // read would race anything else that touched storage in between.
+    if (!cartLoaded) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  }, [cart]);
+  }, [cart, cartLoaded]);
 
   const formConfig = getSemester(semesterId)!;
   const sampleDay = formConfig.days.find((d) => dayType === 'both' || d.dayType === dayType)!;
@@ -338,9 +401,10 @@ export default function App() {
           USAFA Class Schedule <span className="nowrap">→ Calendar</span>
         </h1>
         <p>
-          Pick your semester, M-days, T-days, or both, and class periods. Build your schedule one class at a time, then
-          download a standard <code>.ics</code> file for Google Calendar, Outlook, or Apple Calendar. Every class meeting is a
-          standalone event with Modified Schedule of Calls days handled automatically.
+          A free USAFA schedule builder for AY 2026-2027: pick your semester, M-days, T-days, or both, and class
+          periods. Build your schedule one class at a time, then download a standard <code>.ics</code> file for
+          Google Calendar, Outlook, or Apple Calendar. Every class meeting is a standalone event with Modified
+          Schedule of Calls days handled automatically.
         </p>
         <p className="disclaimer">
           Unofficial tool — always verify against the{' '}
@@ -490,15 +554,21 @@ export default function App() {
               <div className="muted small">
                 <strong className="addon-name">{name}</strong> — {desc}
               </div>
-              <button type="button" className="primary" onClick={() => addAddon(kind)} disabled={addonAdded(kind)}>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => addAddon(kind)}
+                disabled={!cartLoaded || addonAdded(kind)}
+              >
                 {addonAdded(kind) ? `${name} added to ${addonConfig.name}` : `Add ${name} (${addonConfig.name})`}
               </button>
             </li>
           ))}
         </ul>
         <p className="muted small">
-          The all-day M- and T-day events sit in the calendar's banner strip and are marked{' '}
-          <strong>Free</strong> — they never block time on your day.
+          Every add-on imports marked <strong>Free</strong>, so it never blocks time — booking tools like
+          Microsoft Bookings keep those slots available. (Classes you build above import as Busy.) The all-day
+          M- and T-day events sit in the calendar's banner strip.
         </p>
       </section>
 
@@ -507,7 +577,11 @@ export default function App() {
         <aside className="col-rail">
       <section aria-label="Your schedule">
         <h2>Your schedule</h2>
-        {groups.length === 0 ? (
+        {!cartLoaded && groups.length === 0 ? null : groups.length === 0 ? (
+          // Only assert emptiness once the saved cart has actually been read —
+          // the prerendered HTML must not tell a returning user their schedule
+          // is gone while the bundle loads (both prerender and the first
+          // client render take the null branch, so hydration matches).
           <div className="card">
             <p className="muted">
               Nothing here yet — add a class from the builder, or a Calendar Add-on, and it will appear here,
@@ -588,6 +662,17 @@ export default function App() {
       </section>
         </aside>
       </div>
+
+      <section className="card faq" aria-label="FAQ">
+        <h2>M-days, T-days, and how this works</h2>
+        {FAQ_ITEMS.map(({ q, a }) => (
+          <details key={q} className="faq-item">
+            <summary>{q}</summary>
+            <p>{a}</p>
+          </details>
+        ))}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: FAQ_JSON_LD }} />
+      </section>
 
       <UndoImportHelp open={undoHelpOpen} onClose={() => setUndoHelpOpen(false)} />
 

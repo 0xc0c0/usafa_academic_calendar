@@ -603,6 +603,42 @@ button.link.danger {
   min-height: 66px;
 }
 
+/* FAQ: reference material at the page bottom, full width below the columns. */
+.faq {
+  margin-top: 1.5rem;
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.45rem 0;
+}
+
+.faq-item summary:hover,
+.faq-item summary:focus-visible {
+  color: var(--usafa-blue);
+}
+
+.faq-item + .faq-item {
+  border-top: 1px solid var(--border);
+}
+
+.faq-item p {
+  margin: 0.25rem 0 0.7rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 78ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  .faq-item summary:hover,
+  .faq-item summary:focus-visible {
+    color: #8fb4ff;
+  }
+}
+
 .footer {
   margin-top: 2rem;
   border-top: 1px solid var(--border);

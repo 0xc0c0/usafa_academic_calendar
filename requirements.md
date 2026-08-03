@@ -190,9 +190,11 @@ schedule", "Build a class" — never cart/shopping language.*
    - **Calendar Add-ons** (v1.9.0; grew out of the v1.5.0 DF Time card): a
      section with its own semester picker and four one-click fixed entries —
      DF Time (T-days), CW Time (M-days, skips Modified SoC days), and All-Day
-     M-Day / T-Day marker events (untimed, titled by day label, shown as
-     Free). Nothing to configure, no Edit button, none can be added twice per
-     semester. The add-ons' semester is independent of the class builder's.
+     M-Day / T-Day marker events (untimed, titled by day label). All four
+     import shown as Free (v1.10.0; see FR-2.4) so booking tools never treat
+     them as busy. Nothing to configure, no Edit button, none can be added
+     twice per semester. The add-ons' semester is independent of the class
+     builder's.
 4. Entries accumulate in a **cart**: add, edit, remove, clear. Multiple entries are
    allowed (a full course load), including entries on both day types and entries
    with multiple periods. Cart persists across page reloads (localStorage).
@@ -224,8 +226,11 @@ schedule", "Build a class" — never cart/shopping language.*
      SoC note when applicable.
    - `DTSTART`/`DTEND` with `TZID=America/Denver`; file contains a valid `VTIMEZONE`.
      All-day marker events (v1.9.0) instead use `DTSTART;VALUE=DATE` with an
-     exclusive next-day `DTEND`, plus `TRANSP:TRANSPARENT` and
-     `X-MICROSOFT-CDO-BUSYSTATUS:FREE` so they never block time.
+     exclusive next-day `DTEND`. **Every add-on event — all-day markers, DF
+     Time, and CW Time — carries `TRANSP:TRANSPARENT` and
+     `X-MICROSOFT-CDO-BUSYSTATUS:FREE`** (v1.10.0, owner decision 2026-08-02:
+     booking tools such as Microsoft Bookings must not see them as busy).
+     Class meetings remain opaque (Busy).
    - `UID`: deterministic (stable hash of semester + date + day label + period set +
      title), so re-importing an identical file updates rather than duplicates.
      Byte-identical meetings from overlapping entries (e.g. an M-days class
@@ -269,7 +274,15 @@ schedule", "Build a class" — never cart/shopping language.*
    2026-07-31: embedded Outlook screenshots aren't needed).
 3. **Versioning** (v1.6.0): the footer shows the app version, linked to
    `CHANGELOG.md`; every deployed change bumps it.
-4. **Layout** (v1.7.0, refined v1.7.2): on wide screens (≥1100px) the page is
+4. **Search visibility** (v1.9.1–v1.10.0): the page is prerendered to static
+   HTML at build time (vite-prerender-plugin + React hydration; the cart
+   loads post-mount for hydration determinism); a bottom FAQ section covers
+   M/T-days, period times, Modified SoC, imports, and DF/CW Time with
+   matching FAQPage JSON-LD; head carries WebApplication schema, Open
+   Graph/Twitter tags, favicon, canonical, and retuned title/description;
+   `public/` ships robots.txt, sitemap.xml, the GSC verification file, and
+   the pages.dev-mirror noindex/redirect rules.
+5. **Layout** (v1.7.0, refined v1.7.2): on wide screens (≥1100px) the page is
    two columns — "Build a class" and "Calendar Add-ons" (named "Add DF Time
    (optional)" before v1.9.0) in the main column; the sticky right rail
    (e-commerce-cart style) holds "Your schedule" with the bot check and import

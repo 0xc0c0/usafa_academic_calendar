@@ -113,19 +113,17 @@ export function buildIcs(config: SemesterConfig, meetings: Meeting[], now: Date 
   for (const m of meetings) {
     lines.push('BEGIN:VEVENT', `UID:${meetingUid(config.id, m)}`, `DTSTAMP:${dtstamp}`);
     if (m.allDay) {
-      // Date-only banner event, marked Free so it never blocks the time grid
-      // (TRANSP per RFC 5545; the X- property is what Outlook actually reads).
-      lines.push(
-        `DTSTART;VALUE=DATE:${m.date.replace(/-/g, '')}`,
-        `DTEND;VALUE=DATE:${nextDateStamp(m.date)}`,
-        'TRANSP:TRANSPARENT',
-        'X-MICROSOFT-CDO-BUSYSTATUS:FREE',
-      );
+      lines.push(`DTSTART;VALUE=DATE:${m.date.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${nextDateStamp(m.date)}`);
     } else {
       lines.push(
         `DTSTART;TZID=${TZID}:${localStamp(m.date, m.start)}`,
         `DTEND;TZID=${TZID}:${localStamp(m.date, m.end)}`,
       );
+    }
+    if (m.free) {
+      // Free, non-blocking event (TRANSP per RFC 5545; the X- property is
+      // what Outlook and Microsoft Bookings actually read).
+      lines.push('TRANSP:TRANSPARENT', 'X-MICROSOFT-CDO-BUSYSTATUS:FREE');
     }
     lines.push(`SUMMARY:${escapeText(m.title)}`);
     if (m.location) lines.push(`LOCATION:${escapeText(m.location)}`);

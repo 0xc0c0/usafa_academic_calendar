@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#003594"/>
+  <rect x="7" y="11" width="34" height="30" rx="4" fill="#ffffff"/>
+  <rect x="7" y="11" width="34" height="9" rx="4" fill="#4a90d9"/>
+  <rect x="7" y="16" width="34" height="4" fill="#4a90d9"/>
+  <text x="24" y="36" font-family="'Segoe UI', Arial, sans-serif" font-size="14" font-weight="700" fill="#003594" text-anchor="middle">M/T</text>
+</svg>

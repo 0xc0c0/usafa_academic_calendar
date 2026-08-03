@@ -5,13 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Build your USAFA M-day/T-day class schedule and download it as an .ics calendar file. Unofficial tool based on the published Cadet Academic Calendar."
+      content="Free USAFA schedule builder for AY 2026-2027: build your M-day/T-day class schedule and download an .ics file for Google Calendar, Outlook, or Apple Calendar. Unofficial, based on the published Cadet Academic Calendar and Schedule of Calls."
     />
     <link rel="canonical" href="https://usafa-calendar.benslab.dev/" />
-    <title>USAFA Class Schedule → Calendar (.ics)</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://usafa-calendar.benslab.dev/" />
+    <meta property="og:title" content="USAFA Schedule Builder — M-Day/T-Day Classes to Google Calendar, Outlook & Apple (.ics)" />
+    <meta
+      property="og:description"
+      content="Free USAFA schedule builder for AY 2026-2027: build your M-day/T-day class schedule and download an .ics calendar file. Modified Schedule of Calls days handled automatically."
+    />
+    <meta property="og:image" content="https://usafa-calendar.benslab.dev/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>USAFA Schedule Builder — M-Day/T-Day Class Schedule to Google Calendar, Outlook & Apple (.ics)</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "USAFA Class Schedule → Calendar",
+        "alternateName": "USAFA Schedule Builder",
+        "url": "https://usafa-calendar.benslab.dev/",
+        "description": "Free unofficial USAFA schedule builder: turn your M-day/T-day class schedule into a standard .ics calendar file for Google Calendar, Outlook, or Apple Calendar.",
+        "applicationCategory": "SchedulingApplication",
+        "operatingSystem": "Any",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" prerender src="/src/main.tsx"></script>
   </body>
 </html>

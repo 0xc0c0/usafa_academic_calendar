@@ -200,7 +200,7 @@ test('DF Time: one click adds every T-day 1230-1330, downloads correctly, cannot
   const addButton = page.getByRole('button', { name: /Add DF Time \(Fall 2026\)/ });
   await addButton.click();
   await expect(page.getByLabel('Fall 2026 schedule').getByText('DF Time', { exact: true })).toBeVisible();
-  await expect(page.getByText(/T-days, 1230–1330 — 41 class days · 41 calendar events/)).toBeVisible();
+  await expect(page.getByText(/T-days, 1230–1330 · shown as Free — 41 class days · 41 calendar events/)).toBeVisible();
   // The button flips to a disabled "already added" state; no duplicates possible.
   await expect(page.getByRole('button', { name: /DF Time added to Fall 2026/ })).toBeDisabled();
   // Nothing to configure, so DF Time entries have Remove but no Edit.
@@ -261,7 +261,7 @@ test('Calendar Add-ons: CW Time skips Modified SoC days, all-day markers import 
   // The add-ons block is scoped by its own semester select, not the builder's.
   await page.getByRole('button', { name: /Add CW Time \(Fall 2026\)/ }).click();
   await page.getByRole('button', { name: /Add All-Day M-Day Events \(Fall 2026\)/ }).click();
-  await expect(page.getByText(/M-days, 1230–1330, skips Modified SoC days — 35 class days · 35 calendar events/)).toBeVisible();
+  await expect(page.getByText(/M-days, 1230–1330, skips Modified SoC days · shown as Free — 35 class days · 35 calendar events/)).toBeVisible();
   await expect(page.getByText(/M-days, all day · shown as Free — 41 class days · 41 calendar events/)).toBeVisible();
 
   // Switching the add-on semester re-arms the buttons for the other semester.

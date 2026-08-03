@@ -7,6 +7,25 @@ at the first Cloudflare Pages deployment. Commit hashes refer to
 
 ---
 
+## 1.10.0 — 2026-08-02
+
+- **The page is prerendered to static HTML at build time** (SEO tier 2):
+  crawlers and AI assistants that don't execute JavaScript now see the full
+  ~1,100 words of real content instead of six. React hydrates the prerendered
+  markup; saved schedules now load in an effect right after mount (needed for
+  clean hydration — no behavior change).
+- **New FAQ section** — "M-days, T-days, and how this works": what M/T-days
+  are, class period times, Modified SoC days, per-app import steps, DF/CW
+  Time, and the unofficial-tool disclaimer, with matching FAQPage structured
+  data. Also added: WebApplication schema, Open Graph/Twitter tags, a
+  favicon, and a social-preview image.
+- **Title and intro retuned** around the vocabulary people actually search:
+  "schedule builder", the calendar platforms, and "AY 2026-2027".
+- **DF Time and CW Time now import as Free**, like the all-day markers —
+  visible on your calendar but never blocking time, so booking tools such as
+  Microsoft Bookings keep those slots available. Classes still import as
+  Busy. Add-on notes, rail meta lines, and the FAQ say so.
+
 ## 1.9.2 — 2026-08-02
 
 - Fixed the Google Search Console verification file returning an empty 308:
